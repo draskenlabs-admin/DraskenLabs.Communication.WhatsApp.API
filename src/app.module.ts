@@ -4,6 +4,8 @@ import { AppService } from './app.service';
 import { ConnectModule } from './connect/connect.module';
 import { ConfigModule } from '@nestjs/config';
 import { RedisModule } from './redis/redis.module';
+import { CommonModule } from './common/common.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -12,6 +14,8 @@ import { RedisModule } from './redis/redis.module';
     }),
     ConnectModule,
     RedisModule,
+    CommonModule,
+    PrismaModule,
   ],
   controllers: [AppController],
   providers: [AppService],

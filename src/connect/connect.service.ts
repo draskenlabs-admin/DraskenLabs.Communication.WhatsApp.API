@@ -9,24 +9,21 @@ import {
   ConnectWhatsAppResponseDTO,
 } from './dto/connect-waba.dto';
 import { DebugTokenRequestDTO } from './dto/debug-token-request.dto';
+import { UserWhatsappService } from 'src/user/user-whatsapp.service';
 
 @Injectable()
 export class ConnectService {
   constructor(
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly userWhatsappService: UserWhatsappService,
   ) {}
 
   async connectWhatsapp(
     body: ConnectWhatsAppRequestDTO,
+    userId: number,
   ): Promise<ConnectWhatsAppResponseDTO> {
-    // let stateData = await this.redisService.getState(body.code);
-    // if (!stateData) throw new BadRequestException('Invalid state provided');
-
-    // let redirectURI = new URL(
-    //   this.configService.get('META_REDIRECT_URI') ?? '',
-    // );
-    // // redirectURI.searchParams.set('state', state);
+    // Exchange code for access token
     const tokenRes = await axios.get(
       `https://graph.facebook.com/v25.0/oauth/access_token`,
       {
@@ -38,10 +35,16 @@ export class ConnectService {
       },
     );
     const accessToken = tokenRes.data.access_token;
-    // await this.redisService.updateState(body.code, {
-    //   accessToken: accessToken,
-    //   businesses: [],
-    // });
+
+    // Store the connection information in the database
+    await this.userWhatsappService.createOrUpdate({
+      userId: userId,
+      businessId: body.data.businessId,
+      phoneNumberId: body.data.phoneNumberId,
+      wabaId: body.data.wabaId,
+      accessToken: accessToken,
+    });
+
     return {
       accessToken: accessToken,
     };

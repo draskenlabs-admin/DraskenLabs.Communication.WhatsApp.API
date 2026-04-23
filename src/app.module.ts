@@ -7,6 +7,7 @@ import { RedisModule } from './redis/redis.module';
 import { CommonModule } from './common/common.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
+import { ApiKeyModule } from './api-key/api-key.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { UserModule } from './user/user.module';
     CommonModule,
     PrismaModule,
     UserModule,
+    ApiKeyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

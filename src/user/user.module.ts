@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { UserService } from './user.service';
+import { UserWhatsappService } from './user-whatsapp.service';
 import { UserController } from './user.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -18,9 +19,9 @@ import { PrismaModule } from 'src/prisma/prisma.module';
       }),
     }),
   ],
-  providers: [UserService],
+  providers: [UserService, UserWhatsappService],
   controllers: [UserController],
-  exports: [UserService],
+  exports: [UserService, UserWhatsappService, JwtModule],
 })
 export class UserModule {
   configure(consumer: MiddlewareConsumer) {

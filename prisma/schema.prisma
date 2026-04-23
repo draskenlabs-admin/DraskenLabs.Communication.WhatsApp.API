@@ -13,11 +13,40 @@ datasource db {
 }
 
 model User {
+  id           Int            @id @default(autoincrement())
+  clerkId      String         @unique
+  firstName    String
+  lastName     String
+  email        String         @unique
+  status       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  UserWhatsapp UserWhatsapp[]
+  UserApiKey   UserApiKey[]
+}
+
+model UserWhatsapp {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  businessId    String
+  phoneNumberId String
+  wabaId        String
+  accessToken   String // Encrypted
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, businessId])
+}
+
+model UserApiKey {
   id        Int      @id @default(autoincrement())
-  clerkId   String   @unique
-  firstName String
-  lastName  String
-  email     String   @unique
+  userId    Int
+  accessKey String   @unique
+  secretKey String // Encrypted
   status    Boolean  @default(true)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 }

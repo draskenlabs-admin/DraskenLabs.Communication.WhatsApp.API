@@ -55,4 +55,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.set(`state:${stateId}`, JSON.stringify(data), 'EX', 300);
     return stateId;
   }
+
+  // API Keys
+  async setApiKey(
+    accessKey: string,
+    secretKey: string,
+    phoneNumberId: string,
+    accessToken: string,
+  ): Promise<void> {
+    const key = `access_key:${accessKey}`;
+    await this.client.hset(key, {
+      secret_key: secretKey,
+      [phoneNumberId]: accessToken,
+    });
+  }
+
+  async getApiKey(accessKey: string): Promise<Record<string, string> | null> {
+    const key = `access_key:${accessKey}`;
+    const data = await this.client.hgetall(key);
+    return Object.keys(data).length > 0 ? data : null;
+  }
 }

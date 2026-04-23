@@ -1,8 +1,17 @@
-import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { BaseResponse } from 'src/common/responses/base-response';
 import { ConnectService } from './connect.service';
 import { ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
-import { ApiOperation } from '@nestjs/swagger';
+import { ApiOperation, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { WABABusinesses } from 'src/redis/dto/waba-connect-state.dto';
 import { WABANumberModel } from './dto/waba-number.dto';
 import {
@@ -10,12 +19,15 @@ import {
   ConnectWhatsAppResponseDTO,
 } from './dto/connect-waba.dto';
 import { DebugTokenRequestDTO } from './dto/debug-token-request.dto';
+import { Request } from 'express';
 
+@ApiTags('Connect')
 @Controller('connect')
 export class ConnectController {
   constructor(private readonly connectService: ConnectService) {}
 
   @ApiOperation({ description: 'Connect WhatsApp Number' })
+  @ApiBearerAuth()
   @ApiWrappedOkResponse({
     dataDto: ConnectWhatsAppResponseDTO,
     description: 'Connect WhatsApp Number',
@@ -23,9 +35,15 @@ export class ConnectController {
   @Post()
   async connectWhatsApp(
     @Body() body: ConnectWhatsAppRequestDTO,
+    @Req() req: Request,
   ): Promise<BaseResponse<ConnectWhatsAppResponseDTO>> {
+    const user = (req as any).user;
+    if (!user) {
+      throw new UnauthorizedException('User not found in context');
+    }
+
     try {
-      const response = await this.connectService.connectWhatsapp(body);
+      const response = await this.connectService.connectWhatsapp(body, user.id);
       return BaseResponse.success(response);
     } catch (e) {
       return BaseResponse.error(

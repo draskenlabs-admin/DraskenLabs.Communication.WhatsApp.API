@@ -4,6 +4,7 @@ import { UserService } from './user.service';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { UserProfileDto } from './dto/user-profile.dto';
+import { ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
 
 @ApiTags('User')
 @Controller('user')
@@ -16,6 +17,10 @@ export class UserController {
   @Get('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
+  @ApiWrappedOkResponse({
+    dataDto: UserProfileDto,
+    description: 'Get user profile',
+  })
   async getProfile(@Req() req: Request): Promise<UserProfileDto> {
     const user = (req as any).user;
     if (!user) {

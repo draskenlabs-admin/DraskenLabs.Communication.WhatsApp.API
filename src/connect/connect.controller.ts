@@ -1,43 +1,53 @@
-import { Controller, Get, Param, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, Res } from '@nestjs/common';
 import { BaseResponse } from 'src/common/responses/base-response';
 import { ConnectService } from './connect.service';
 import { ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
-import { ConnectURLResponseDTO } from './dto/connect-url-response.dto';
 import { ApiOperation } from '@nestjs/swagger';
-import { Response } from 'express';
 import { WABABusinesses } from 'src/redis/dto/waba-connect-state.dto';
 import { WABANumberModel } from './dto/waba-number.dto';
+import {
+  ConnectWhatsAppRequestDTO,
+  ConnectWhatsAppResponseDTO,
+} from './dto/connect-waba.dto';
+import { DebugTokenRequestDTO } from './dto/debug-token-request.dto';
 
 @Controller('connect')
 export class ConnectController {
   constructor(private readonly connectService: ConnectService) {}
 
-  @ApiOperation({ description: 'Get WhatsApp Connect URL' })
+  @ApiOperation({ description: 'Connect WhatsApp Number' })
   @ApiWrappedOkResponse({
-    dataDto: ConnectURLResponseDTO,
-    description: 'Get WhatsApp Connect URL',
+    dataDto: ConnectWhatsAppResponseDTO,
+    description: 'Connect WhatsApp Number',
   })
-  @Get()
-  async getWhatsAppConnectURL(): Promise<BaseResponse<ConnectURLResponseDTO>> {
-    const response = await this.connectService.connectService();
-    return BaseResponse.success(response);
-  }
-
-  @Get('/redirect')
-  async callbackRedirect(
-    @Query('code') code: string,
-    @Query('state') state: string,
-    @Res() res: Response,
-  ): Promise<any> {
+  @Post()
+  async connectWhatsApp(
+    @Body() body: ConnectWhatsAppRequestDTO,
+  ): Promise<BaseResponse<ConnectWhatsAppResponseDTO>> {
     try {
-      const response = await this.connectService.callbackRedirect(code, state);
-      return BaseResponse.success({});
-      // return res.redirect(`/connect/businesses?state=${state}`);
+      const response = await this.connectService.connectWhatsapp(body);
+      return BaseResponse.success(response);
     } catch (e) {
       return BaseResponse.error(
         400,
         e?.message ??
           'Error while connecting whatsapp number. Please try again later.',
+      );
+    }
+  }
+
+  @ApiOperation({ description: 'Debug Token' })
+  @Post('/debugToken')
+  async debugToken(
+    @Body() body: DebugTokenRequestDTO,
+  ): Promise<BaseResponse<any>> {
+    try {
+      const response = await this.connectService.debugToken(body);
+      return BaseResponse.success(response);
+    } catch (e) {
+      return BaseResponse.error(
+        400,
+        e?.message ?? 'Error while debug token. Please try again later.',
       );
     }
   }

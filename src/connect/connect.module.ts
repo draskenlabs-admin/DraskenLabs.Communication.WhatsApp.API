@@ -3,10 +3,11 @@ import { ConnectController } from './connect.controller';
 import { ConnectService } from './connect.service';
 import { UserModule } from 'src/user/user.module';
 import { RedisModule } from 'src/redis/redis.module';
+import { WabaModule } from 'src/waba/waba.module';
 import { AuthMiddleware } from 'src/user/middleware/auth.middleware';
 
 @Module({
-  imports: [UserModule, RedisModule],
+  imports: [UserModule, RedisModule, WabaModule],
   controllers: [ConnectController],
   providers: [ConnectService],
 })

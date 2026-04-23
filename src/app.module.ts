@@ -8,6 +8,8 @@ import { CommonModule } from './common/common.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { UserModule } from './user/user.module';
 import { ApiKeyModule } from './api-key/api-key.module';
+import { WabaModule } from './waba/waba.module';
+import { WabaPhoneNumberModule } from './waba-phone-number/waba-phone-number.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { ApiKeyModule } from './api-key/api-key.module';
     PrismaModule,
     UserModule,
     ApiKeyModule,
+    WabaModule,
+    WabaPhoneNumberModule,
   ],
   controllers: [AppController],
   providers: [AppService],

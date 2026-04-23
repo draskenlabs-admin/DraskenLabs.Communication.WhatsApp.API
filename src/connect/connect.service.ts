@@ -10,6 +10,7 @@ import {
 } from './dto/connect-waba.dto';
 import { DebugTokenRequestDTO } from './dto/debug-token-request.dto';
 import { UserWhatsappService } from 'src/user/user-whatsapp.service';
+import { WabaService } from 'src/waba/waba.service';
 
 @Injectable()
 export class ConnectService {
@@ -17,6 +18,7 @@ export class ConnectService {
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
     private readonly userWhatsappService: UserWhatsappService,
+    private readonly wabaService: WabaService,
   ) {}
 
   async connectWhatsapp(
@@ -35,6 +37,12 @@ export class ConnectService {
       },
     );
     const accessToken = tokenRes.data.access_token;
+
+    // First create or update the Waba record
+    await this.wabaService.createOrUpdateWaba({
+      wabaId: body.data.wabaId,
+      userId: userId,
+    });
 
     // Store the connection information in the database
     await this.userWhatsappService.createOrUpdate({

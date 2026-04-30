@@ -4,6 +4,64 @@ Plan to resolve all 20 gaps identified in `docs/development/architecture-gap-ana
 
 ---
 
+## Core Design Intent: One API Key → Any Phone Number
+
+Before reading the individual tasks, it is important to understand the single design principle that drives Waves 2, 3, and 4 together:
+
+> **An API key is user-scoped, not phone-scoped. One key gives access to every phone number that belongs to that user, across all their WABAs. Phone number resolution happens at request time — not at key creation time.**
+
+### How This Works End-to-End
+
+```
+Key Creation  (POST /api-keys)
+─────────────────────────────
+API key is created with NO phone number binding.
+Redis stores only:  apiKey:{accessKey} → { userId, secretKey }
+The user gets back: { accessKey, secretKey }
+That's it. No phone. No WABA. No token.
+
+
+Phone Cache   (POST /wabas/:wabaId/phone-numbers/sync)
+──────────────────────────────────────────────────────
+Separately, whenever the user syncs their phone numbers,
+Redis is populated with one entry per phone number:
+  phone:{phoneNumberId_1} → { userId, wabaId, accessToken }
+  phone:{phoneNumberId_2} → { userId, wabaId, accessToken }
+  phone:{phoneNumberId_3} → { userId, wabaId_B, accessToken }   ← different WABA, same key works
+  ...
+
+
+Message Send  (POST /messages)
+──────────────────────────────
+Client sends:  x-access-key + x-secret-key + { phoneNumberId, to, ... }
+
+Step 1 — Resolve user:
+  GET apiKey:{accessKey}  →  { userId, secretKey }
+  verify secretKey → userId resolved
+
+Step 2 — Resolve phone token:
+  GET phone:{phoneNumberId}  →  { userId, wabaId, accessToken }
+  assert phone.userId === apiKey.userId  →  ownership confirmed
+  decrypt accessToken  →  ready to call Meta
+
+Step 3 — Send:
+  POST /{phoneNumberId}/messages  Authorization: Bearer {decryptedToken}
+```
+
+### What the Current Code Does Wrong
+
+| Aspect | Current Code | Architecture |
+|--------|-------------|-------------|
+| Key creation requires | `phoneNumberId` + `wabaId` in request body | Nothing — user-scoped only |
+| Key is bound to | One specific phone number at creation | No phone — any phone at send time |
+| Redis stores at key creation | `secret_key` + `{phoneNumberId}: decryptedToken` in one Hash | Only `{ userId, secretKey: encrypted }` |
+| Phone token lookup | Baked into API key Redis Hash | Separate `phone:{phoneNumberId}` key |
+| User with 4 phone numbers needs | 4 API keys (one per phone) | 1 API key (works for all 4) |
+
+Tasks 2.2, 3.1, 3.2, 3.3, and 4.1 together implement this design. They must be understood and delivered as a cohesive unit, not as isolated fixes.
+
+---
+
 ## Overview
 
 | Wave | Name | Gaps Addressed | Effort | Unblocks |

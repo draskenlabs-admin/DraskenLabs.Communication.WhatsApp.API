@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsEnum, IsInt, IsNotEmpty, IsString } from 'class-validator';
 import { OrgRole } from '@prisma/client';
 
 export class OrgResponseDto {
@@ -57,5 +57,46 @@ export class AddMemberDto {
 export class UpdateMemberRoleDto {
   @ApiProperty({ enum: [OrgRole.admin, OrgRole.member] })
   @IsEnum([OrgRole.admin, OrgRole.member])
+  role: OrgRole;
+}
+
+export class CreateOrgDto {
+  @ApiProperty({ description: 'Organisation name' })
+  @IsString()
+  @IsNotEmpty()
+  name: string;
+}
+
+export class SwitchOrgDto {
+  @ApiProperty({ description: 'ID of the organisation to switch to' })
+  @IsInt()
+  orgId: number;
+}
+
+export class MyOrgResponseDto {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  slug: string;
+
+  @ApiProperty({ enum: OrgRole })
+  role: OrgRole;
+
+  @ApiProperty()
+  createdAt: Date;
+}
+
+export class SwitchOrgResponseDto {
+  @ApiProperty()
+  access_token: string;
+
+  @ApiProperty()
+  orgId: number;
+
+  @ApiProperty({ enum: OrgRole })
   role: OrgRole;
 }

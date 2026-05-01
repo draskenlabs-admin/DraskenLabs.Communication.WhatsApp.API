@@ -8,6 +8,8 @@ import { OrgRole } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import {
   AddMemberDto,
+  CreateOrgDto,
+  MyOrgResponseDto,
   OrgMemberResponseDto,
   OrgResponseDto,
   UpdateMemberRoleDto,
@@ -17,6 +19,41 @@ import {
 @Injectable()
 export class OrgService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async createOrgForUser(dto: CreateOrgDto, userId: number): Promise<{ orgId: number; role: OrgRole }> {
+    return this.createOrg(dto.name, userId);
+  }
+
+  async getUserOrgs(userId: number): Promise<MyOrgResponseDto[]> {
+    const memberships = await this.prisma.orgMember.findMany({
+      where: { userId },
+      include: { org: true },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    return memberships.map((m) => ({
+      id: m.org.id,
+      name: m.org.name,
+      slug: m.org.slug,
+      role: m.role,
+      createdAt: m.org.createdAt,
+    }));
+  }
+
+  async switchOrg(userId: number, targetOrgId: number): Promise<{ orgId: number; role: OrgRole }> {
+    const member = await this.prisma.orgMember.findUnique({
+      where: { orgId_userId: { orgId: targetOrgId, userId } },
+    });
+
+    if (!member) throw new NotFoundException('You are not a member of this organisation');
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { activeOrgId: targetOrgId },
+    });
+
+    return { orgId: targetOrgId, role: member.role };
+  }
 
   async createOrg(name: string, ownerUserId: number): Promise<{ orgId: number; role: OrgRole }> {
     const slug = await this.generateSlug(name);

@@ -14,9 +14,12 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+  it('should return API root info', () => {
+    const result = appController.getHello();
+    expect(result).toMatchObject({
+      name: 'Communication WhatsApp API',
+      docs: '/swagger/docs',
+      openApiJson: '/swagger/json',
     });
   });
 });

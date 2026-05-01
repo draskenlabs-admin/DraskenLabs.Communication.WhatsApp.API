@@ -1,0 +1,120 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { MessagingService } from './messaging.service';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { RedisService } from 'src/redis/redis.service';
+import { EncryptionService } from 'src/common/services/crypto.service';
+import { ContactsService } from 'src/contacts/contacts.service';
+import { MessageTypeEnum } from './dto/send-message.dto';
+import axios from 'axios';
+
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+const mockPrisma = {
+  message: {
+    create: jest.fn(),
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+  },
+};
+const mockRedis = { getPhoneCache: jest.fn() };
+const mockEncryption = { decrypt: jest.fn().mockReturnValue('plain_token') };
+const mockContacts = { isOptedOut: jest.fn().mockResolvedValue(false) };
+
+describe('MessagingService', () => {
+  let service: MessagingService;
+
+  beforeEach(async () => {
+    jest.clearAllMocks();
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        MessagingService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: RedisService, useValue: mockRedis },
+        { provide: EncryptionService, useValue: mockEncryption },
+        { provide: ContactsService, useValue: mockContacts },
+      ],
+    }).compile();
+    service = module.get<MessagingService>(MessagingService);
+  });
+
+  describe('sendMessage', () => {
+    const dto: any = {
+      phoneNumberId: 'p1',
+      to: '447911111111',
+      type: MessageTypeEnum.text,
+      text: 'Hello',
+    };
+
+    it('throws NotFoundException if phone not in cache', async () => {
+      mockRedis.getPhoneCache.mockResolvedValue(null);
+      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ForbiddenException if phone belongs to different user', async () => {
+      mockRedis.getPhoneCache.mockResolvedValue({ userId: 99, wabaId: 'w1', accessToken: 'enc' });
+      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('throws BadRequestException if recipient has opted out', async () => {
+      mockRedis.getPhoneCache.mockResolvedValue({ userId: 1, wabaId: 'w1', accessToken: 'enc' });
+      mockContacts.isOptedOut.mockResolvedValueOnce(true);
+      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(BadRequestException);
+    });
+
+    it('sends text message and persists to DB', async () => {
+      mockRedis.getPhoneCache.mockResolvedValue({ userId: 1, wabaId: 'w1', accessToken: 'enc' });
+      mockContacts.isOptedOut.mockResolvedValue(false);
+      mockedAxios.post = jest.fn().mockResolvedValue({ data: { messages: [{ id: 'wamid.abc' }] } });
+      mockPrisma.message.create.mockResolvedValue({
+        id: 1, metaMessageId: 'wamid.abc', phoneNumberId: 'p1', to: '447911111111',
+        type: 'text', status: 'sent', createdAt: new Date(),
+      });
+
+      const result = await service.sendMessage(1, 1, dto);
+      expect(result.metaMessageId).toBe('wamid.abc');
+      expect(mockPrisma.message.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ type: 'text', orgId: 1 }) }),
+      );
+    });
+
+    it('sends template message with correct Meta payload', async () => {
+      const templateDto: any = {
+        phoneNumberId: 'p1', to: '447911111111',
+        type: MessageTypeEnum.template,
+        templateName: 'hello_world', templateLanguage: 'en_US',
+      };
+      mockRedis.getPhoneCache.mockResolvedValue({ userId: 1, wabaId: 'w1', accessToken: 'enc' });
+      mockedAxios.post = jest.fn().mockResolvedValue({ data: { messages: [{ id: 'wamid.t1' }] } });
+      mockPrisma.message.create.mockResolvedValue({
+        id: 2, metaMessageId: 'wamid.t1', phoneNumberId: 'p1', to: '447911111111',
+        type: 'template', status: 'sent', createdAt: new Date(),
+      });
+
+      await service.sendMessage(1, 1, templateDto);
+
+      const postedPayload = (mockedAxios.post as jest.Mock).mock.calls[0][1];
+      expect(postedPayload.template.name).toBe('hello_world');
+      expect(postedPayload.template.language.code).toBe('en_US');
+    });
+  });
+
+  describe('findAll', () => {
+    it('returns messages scoped to org', async () => {
+      mockPrisma.message.findMany.mockResolvedValue([
+        { id: 1, metaMessageId: 'w1', phoneNumberId: 'p1', to: '111', type: 'text', status: 'sent', createdAt: new Date(), updatedAt: new Date() },
+      ]);
+      const result = await service.findAll(5);
+      expect(mockPrisma.message.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { orgId: 5 } }));
+      expect(result).toHaveLength(1);
+    });
+  });
+
+  describe('findOne', () => {
+    it('throws NotFoundException if message not in org', async () => {
+      mockPrisma.message.findUnique.mockResolvedValue({ id: 1, orgId: 99 });
+      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
+    });
+  });
+});

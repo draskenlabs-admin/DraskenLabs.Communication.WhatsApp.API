@@ -1,18 +1,66 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ConnectService } from './connect.service';
+import { UserWhatsappService } from 'src/user/user-whatsapp.service';
+import { WabaService } from 'src/waba/waba.service';
+import { WabaPhoneNumberService } from 'src/waba-phone-number/waba-phone-number.service';
+import axios from 'axios';
+
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 describe('ConnectService', () => {
   let service: ConnectService;
+  let configService: jest.Mocked<ConfigService>;
+  let userWhatsappService: jest.Mocked<UserWhatsappService>;
+  let wabaService: jest.Mocked<WabaService>;
+  let wabaPhoneNumberService: jest.Mocked<WabaPhoneNumberService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [ConnectService],
+      providers: [
+        ConnectService,
+        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('test-value') } },
+        { provide: UserWhatsappService, useValue: { createOrUpdate: jest.fn() } },
+        { provide: WabaService, useValue: { createOrUpdateWaba: jest.fn() } },
+        { provide: WabaPhoneNumberService, useValue: { syncPhoneNumbersWithToken: jest.fn() } },
+      ],
     }).compile();
 
     service = module.get<ConnectService>(ConnectService);
+    configService = module.get(ConfigService);
+    userWhatsappService = module.get(UserWhatsappService);
+    wabaService = module.get(WabaService);
+    wabaPhoneNumberService = module.get(WabaPhoneNumberService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  it('should throw BadRequestException if token exchange fails', async () => {
+    mockedAxios.get = jest.fn().mockResolvedValueOnce({ data: {} });
+
+    await expect(
+      service.connectWhatsapp({ code: 'bad', wabaId: 'w1', businessId: 'b1' }, 1, 1),
+    ).rejects.toThrow(BadRequestException);
+  });
+
+  it('should connect and return phone numbers', async () => {
+    mockedAxios.get = jest.fn()
+      .mockResolvedValueOnce({ data: { access_token: 'tok' } })
+      .mockResolvedValueOnce({ data: { id: 'w1', name: 'Test', currency: 'USD', timezone_id: '1', message_template_namespace: 'ns' } });
+
+    wabaService.createOrUpdateWaba.mockResolvedValue({ wabaId: 'w1' } as any);
+    userWhatsappService.createOrUpdate.mockResolvedValue({ accessToken: 'enc' } as any);
+    wabaPhoneNumberService.syncPhoneNumbersWithToken.mockResolvedValue([
+      { phoneNumberId: 'p1', displayPhoneNumber: '+1555', verifiedName: 'Test', qualityRating: 'GREEN' } as any,
+    ]);
+
+    const result = await service.connectWhatsapp({ code: 'code', wabaId: 'w1', businessId: 'b1' }, 1, 1);
+    expect(result.wabaId).toBe('w1');
+    expect(result.phoneNumbers).toHaveLength(1);
+    expect(result.phoneNumbers[0].phoneNumberId).toBe('p1');
   });
 });

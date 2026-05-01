@@ -43,7 +43,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 |--------|--------|-----------|-------|
 | [Auth](./modules/auth/) | ✅ Complete | 100% | Clerk signup/login, JWT middleware (cache-first), API key auth middleware, API key revocation all live |
 | [Organisation](./modules/org/) | ✅ Complete | 100% | Multi-org support — create, switch, list orgs; team member invite/role/remove |
-| [Account Management](./modules/account-management/) | 🔄 In Progress | 85% | Connect redesigned (Embedded Signup), phone cache populated on connect. Disconnect endpoint still missing. |
+| [Account Management](./modules/account-management/) | ✅ Complete | 100% | Connect (Embedded Signup), phone cache on connect. Disconnect invalidates phone cache and removes access token. |
 | [Messaging](./modules/messaging/) | ✅ Complete | 100% | POST /messages (text/media/template), GET /messages, GET /messages/:id live. Opt-out enforced at send time. |
 | [Templates](./modules/templates/) | ✅ Complete | 100% | Sync from Meta, list, get. Status kept current by webhook handler. |
 | [Webhooks](./modules/webhooks/) | ✅ Complete | 100% | GET verification + POST HMAC-signed event processing. Inbound messages, status updates, phone quality, account events all handled. |
@@ -76,6 +76,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | POST | `/wabas/:wabaId/sync` | JWT | ✅ Live |
 | GET | `/wabas/:wabaId/phone-numbers` | JWT | ✅ Live |
 | POST | `/wabas/:wabaId/phone-numbers/sync` | JWT | ✅ Live |
+| DELETE | `/wabas/:wabaId/connect` | JWT | ✅ Live |
 | POST | `/api-keys` | JWT | ✅ Live |
 | GET | `/api-keys` | JWT | ✅ Live |
 | DELETE | `/api-keys/:id` | JWT | ✅ Live |
@@ -99,7 +100,6 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 
 | Gap | Module | Priority | Impact |
 |-----|--------|----------|--------|
-| WABA disconnect endpoint | Account Management | 🟡 Medium | No way to revoke WABA connection |
 | Test coverage (~8% overall) | All | 🟡 Medium | Reliability risk |
 | Analytics and reporting | Analytics | 🟢 Low | Post-launch |
 

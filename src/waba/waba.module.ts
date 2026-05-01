@@ -3,9 +3,10 @@ import { WabaService } from './waba.service';
 import { WabaController } from './waba.controller';
 import { UserModule } from 'src/user/user.module';
 import { AuthMiddleware } from 'src/user/middleware/auth.middleware';
+import { RedisModule } from 'src/redis/redis.module';
 
 @Module({
-  imports: [UserModule],
+  imports: [UserModule, RedisModule],
   providers: [WabaService],
   controllers: [WabaController],
   exports: [WabaService],

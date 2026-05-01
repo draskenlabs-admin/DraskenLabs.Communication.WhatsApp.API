@@ -1,6 +1,8 @@
 import {
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Req,
@@ -80,5 +82,24 @@ export class WabaController {
       timezoneId: metaDetails.timezone_id,
       messageTemplateNamespace: metaDetails.message_template_namespace,
     });
+  }
+
+  @Delete('/:wabaId/connect')
+  @HttpCode(204)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Disconnect a WABA',
+    description:
+      'Removes your access token for this WABA and invalidates all associated phone number caches. ' +
+      'The WABA and phone number records are preserved for audit purposes.',
+  })
+  async disconnect(
+    @Param('wabaId') wabaId: string,
+    @Req() req: Request,
+  ): Promise<void> {
+    const user = (req as any).user;
+    const orgId = (req as any).orgId;
+    if (!user || !orgId) throw new UnauthorizedException('User not found in context');
+    return this.wabaService.disconnectWaba(user.id, orgId, wabaId);
   }
 }

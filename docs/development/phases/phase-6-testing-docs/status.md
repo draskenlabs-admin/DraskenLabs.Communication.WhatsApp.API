@@ -37,6 +37,9 @@
 | `src/user/user.service.spec.ts` | ❌ Missing | — |
 | `src/user/user-whatsapp.service.spec.ts` | ❌ Missing | — |
 | `src/user/middleware/auth.middleware.spec.ts` | ❌ Missing | — |
+| `src/auth/auth.service.spec.ts` | ❌ Missing | — |
+| `src/auth/clerk.service.spec.ts` | ❌ Missing | — |
+| `src/auth/auth.controller.spec.ts` | ❌ Missing | — |
 | `src/waba/waba.service.spec.ts` | ❌ Missing | — |
 | `src/waba/waba.controller.spec.ts` | ❌ Missing | — |
 | `src/waba-phone-number/waba-phone-number.service.spec.ts` | ❌ Missing | — |

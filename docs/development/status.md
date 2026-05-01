@@ -15,6 +15,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Cache | Redis (via ioredis v5) |
 | API Standard | REST + Swagger/OpenAPI |
 | Auth | JWT (Clerk-backed) + API Key |
+| Multi-tenancy | Organisation-scoped — users can belong to multiple orgs |
 
 ---
 
@@ -27,8 +28,9 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Phase 3 – User Management | ✅ Complete | 100% |
 | Phase 4 – WABA & Phone Numbers | ✅ Complete | 100% |
 | Phase 5 – API Key Management | ✅ Complete | 100% |
-| Phase 6 – Messaging | 🔄 In Progress | 30% |
-| Phase 7 – Testing & Documentation | 🔄 In Progress | 40% |
+| Phase 6 – Organisation & Multi-tenancy | ✅ Complete | 100% |
+| Phase 7 – Messaging | 🔄 In Progress | 30% |
+| Phase 8 – Testing & Documentation | 🔄 In Progress | 40% |
 
 ---
 
@@ -37,6 +39,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Module | Status | Completion | Notes |
 |--------|--------|-----------|-------|
 | [Auth](./modules/auth/) | ✅ Complete | 100% | Clerk signup/login, JWT middleware (cache-first), API key auth middleware, API key revocation all live |
+| [Organisation](./modules/org/) | ✅ Complete | 100% | Multi-org support — create, switch, list orgs; team member invite/role/remove |
 | [Account Management](./modules/account-management/) | 🔄 In Progress | 85% | Connect redesigned (Embedded Signup), phone cache populated on connect. Disconnect endpoint still missing. |
 | [Messaging](./modules/messaging/) | 🔄 In Progress | 30% | POST /messages, GET /messages, GET /messages/:id live. Webhook status updates and template messages pending. |
 | [Templates](./modules/templates/) | ❌ Not Started | 0% | Required for proactive messaging |
@@ -56,7 +59,15 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | GET | `/user/profile` | JWT | ✅ Live |
 | POST | `/user/test-token` | No | ✅ Live (Dev only) |
 | POST | `/connect` | JWT | ✅ Live (redesigned — Embedded Signup, auto phone sync) |
-| POST | `/connect/debugToken` | No | ✅ Live |
+| GET | `/org/mine` | JWT | ✅ Live |
+| POST | `/org` | JWT | ✅ Live |
+| POST | `/org/switch` | JWT | ✅ Live |
+| GET | `/org` | JWT | ✅ Live |
+| PATCH | `/org` | JWT | ✅ Live |
+| GET | `/org/members` | JWT | ✅ Live |
+| POST | `/org/members` | JWT | ✅ Live |
+| PATCH | `/org/members/:userId/role` | JWT | ✅ Live |
+| DELETE | `/org/members/:userId` | JWT | ✅ Live |
 | GET | `/wabas` | JWT | ✅ Live |
 | GET | `/wabas/:wabaId` | JWT | ✅ Live |
 | POST | `/wabas/:wabaId/sync` | JWT | ✅ Live |
@@ -88,9 +99,11 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 
 | Model | Status | Notes |
 |-------|--------|-------|
-| `User` | ✅ Live | — |
+| `Organisation` | ✅ Live | — |
+| `OrgMember` | ✅ Live | role: owner / admin / member |
+| `User` | ✅ Live | `activeOrgId` added |
 | `UserWhatsapp` | ✅ Live | — |
-| `Waba` | ✅ Live | — |
+| `Waba` | ✅ Live | `orgId` FK added |
 | `WabaPhoneNumber` | ✅ Live | — |
 | `UserApiKey` | ✅ Live | — |
 | `Message` | ✅ Live | Outbound message records with status tracking |

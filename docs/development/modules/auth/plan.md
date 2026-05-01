@@ -81,3 +81,6 @@
 |----------|-------------|
 | `JWT_SECRET` | JWT signing and verification secret |
 | `ENCRYPTION_KEY` | AES-256-GCM key for secret key encryption |
+| `CLERK_SECRET_KEY` | Clerk Backend API key — used to create users and fetch user profiles |
+| `CLERK_PUBLISHABLE_KEY` | Clerk publishable key — stored for reference |
+| `CLERK_FRONTEND_API_URL` | Clerk Frontend API base URL (e.g. `https://clerk.draskenlabs.com`) — used for password sign-in |

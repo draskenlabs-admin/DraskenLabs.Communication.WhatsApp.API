@@ -493,7 +493,7 @@ Target: raise coverage from ~8% to ≥80%.
 |------|-----|------|
 | 1.1 | C1 — WABA ownership check | ☐ |
 | 1.2 | C3 — clientWABAs middleware | ☐ |
-| 1.3 | F2 — user.status in AuthMiddleware | ☐ |
+| 1.3 | F2 — user.status in AuthMiddleware | ✅ |
 | 1.4 | F6 — test-token env gate | ☐ |
 | 1.5 | M6 — forbidUnknownValues | ☐ |
 

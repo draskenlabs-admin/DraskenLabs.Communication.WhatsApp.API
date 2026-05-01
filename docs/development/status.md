@@ -35,7 +35,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 
 | Module | Status | Completion | Notes |
 |--------|--------|-----------|-------|
-| [Auth](./modules/auth/) | 🔄 In Progress | 75% | API key auth strategy and revocation missing |
+| [Auth](./modules/auth/) | 🔄 In Progress | 90% | Clerk signup/login added, Redis user cache live, user.status check added — API key auth strategy and revocation still missing |
 | [Account Management](./modules/account-management/) | 🔄 In Progress | 70% | Disconnect and phone registration missing |
 | [Messaging](./modules/messaging/) | ❌ Not Started | 0% | Core product feature — priority |
 | [Templates](./modules/templates/) | ❌ Not Started | 0% | Required for proactive messaging |
@@ -50,6 +50,8 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Method | Endpoint | Auth | Status |
 |--------|----------|------|--------|
 | GET | `/` | No | ✅ Live |
+| POST | `/auth/signup` | No | ✅ Live |
+| POST | `/auth/login` | No | ✅ Live |
 | GET | `/user/profile` | JWT | ✅ Live |
 | POST | `/user/test-token` | No | ✅ Live (Dev only) |
 | POST | `/connect` | JWT | ✅ Live |

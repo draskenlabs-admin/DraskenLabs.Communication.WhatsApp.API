@@ -1,15 +1,17 @@
-import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
+import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { ApiKeyService } from './api-key.service';
 import { ApiKeyController } from './api-key.controller';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { RedisModule } from 'src/redis/redis.module';
 import { UserModule } from 'src/user/user.module';
 import { AuthMiddleware } from 'src/user/middleware/auth.middleware';
+import { ApiKeyAuthMiddleware } from './middleware/api-key-auth.middleware';
 
 @Module({
   imports: [PrismaModule, RedisModule, UserModule],
-  providers: [ApiKeyService],
+  providers: [ApiKeyService, ApiKeyAuthMiddleware],
   controllers: [ApiKeyController],
+  exports: [ApiKeyService, ApiKeyAuthMiddleware],
 })
 export class ApiKeyModule {
   configure(consumer: MiddlewareConsumer) {

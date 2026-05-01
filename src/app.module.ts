@@ -11,6 +11,7 @@ import { ApiKeyModule } from './api-key/api-key.module';
 import { WabaModule } from './waba/waba.module';
 import { WabaPhoneNumberModule } from './waba-phone-number/waba-phone-number.module';
 import { AuthModule } from './auth/auth.module';
+import { MessagingModule } from './messaging/messaging.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { AuthModule } from './auth/auth.module';
     WabaModule,
     WabaPhoneNumberModule,
     AuthModule,
+    MessagingModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { EncryptionService } from 'src/common/services/crypto.service';
 import { RedisService } from 'src/redis/redis.service';
@@ -35,5 +35,20 @@ export class ApiKeyService {
       where: { userId },
       select: { id: true, accessKey: true, status: true, createdAt: true },
     });
+  }
+
+  async revokeApiKey(userId: number, keyId: number): Promise<void> {
+    const key = await this.prisma.userApiKey.findUnique({ where: { id: keyId } });
+
+    if (!key || key.userId !== userId) {
+      throw new NotFoundException('API key not found');
+    }
+
+    await this.prisma.userApiKey.update({
+      where: { id: keyId },
+      data: { status: false },
+    });
+
+    await this.redisService.deleteApiKeyCache(key.accessKey);
   }
 }

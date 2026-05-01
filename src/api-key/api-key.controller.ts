@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Req, Param, ParseIntPipe, HttpCode, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ApiKeyService } from './api-key.service';
 import { CreateApiKeyDto, ApiKeyResponseDto, ApiKeyListResponseDto } from './dto/api-key.dto';
@@ -39,5 +39,20 @@ export class ApiKeyController {
       throw new UnauthorizedException('User not found in context');
     }
     return this.apiKeyService.findAllByUserId(user.id);
+  }
+
+  @Delete(':id')
+  @ApiBearerAuth()
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Revoke an API key' })
+  async revoke(
+    @Req() req: Request,
+    @Param('id', ParseIntPipe) id: number,
+  ): Promise<void> {
+    const user = (req as any).user;
+    if (!user) {
+      throw new UnauthorizedException('User not found in context');
+    }
+    await this.apiKeyService.revokeApiKey(user.id, id);
   }
 }

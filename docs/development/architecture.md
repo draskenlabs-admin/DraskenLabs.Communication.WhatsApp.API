@@ -144,13 +144,15 @@
    ┌──────────────────────┐          ┌─────────────────────────────┐
    │   Verify JWT         │          │  Redis Lookup               │
    │   JWT_SECRET         │          │  apiKey:{accessKey}         │
-   │   Extract sub=clerkId│          │  → { userId, secretKey }    │
+   │   Extract sub=userId │          │  → { userId, secretKey }    │
+   │   (numeric DB id)    │          │                             │
    └──────────┬───────────┘          └──────────────┬──────────────┘
               │                                      │
               ▼                                      ▼
    ┌──────────────────────┐          ┌─────────────────────────────┐
-   │   DB Lookup          │          │  Decrypt + Compare          │
-   │   User by clerkId    │          │  secretKey vs header        │
+   │   Redis Cache Lookup │          │  Decrypt + Compare          │
+   │   user:{userId}      │          │  secretKey vs header        │
+   │   (miss → DB query)  │          │                             │
    └──────────┬───────────┘          └──────────────┬──────────────┘
               │                                      │
               ▼                                      ▼
@@ -168,7 +170,7 @@
 
 | Strategy | Token Location | Validation Steps | Failure Response |
 |----------|---------------|-----------------|-----------------|
-| JWT | `Authorization: Bearer <token>` | Verify signature → extract `sub` → load user by `clerkId` | 401 Unauthorized |
+| JWT | `Authorization: Bearer <token>` | Verify signature → extract `sub` (numeric DB `user.id`) → Redis cache hit or DB lookup by `userId` | 401 Unauthorized |
 | API Key | `x-access-key` + `x-secret-key` headers | Redis lookup → decrypt secret → compare → load user by `userId` | 401 Unauthorized |
 
 ---
@@ -242,12 +244,8 @@ WABA A                                         WABA B
 ├─────────────────────┼───────────┼──────────────────────┼───────────────┤
 │ user:{id}:phones    │ Set       │ [ phoneId, phoneId ]  │ None          │
 │                     │           │                       │ (persistent)  │
-├─────────────────────┼───────────┼──────────────────────┼───────────────┤
-│ waba:connect:       │ String    │ {                     │ 300s          │
-│ state:{uuid}        │ (JSON)    │   userId: number,     │ (OAuth flow)  │
-│                     │           │   accessToken: string,│               │
-│                     │           │   businesses: []      │               │
-│                     │           │ }                     │               │
+│                     │           │ (planned — not yet    │               │
+│                     │           │  implemented)         │               │
 └─────────────────────┴───────────┴──────────────────────┴───────────────┘
 ```
 
@@ -394,11 +392,12 @@ WABA A                                         WABA B
 │ id          │        │ id               │        │ id                │
 │ clerkId     │        │ userId  (FK)     │        │ userId  (FK)      │
 │ firstName   │        │ businessId       │        │ accessKey         │
-│ lastName    │        │ phoneNumberId    │        │ secretKey (enc)   │
-│ email       │        │ wabaId           │        │ status            │
-│ status      │        │ accessToken(enc) │        │ createdAt         │
-│ createdAt   │        │ createdAt        │        │ updatedAt         │
-└──────┬──────┘        │ updatedAt        │        └───────────────────┘
+│ lastName    │        │ wabaId           │        │ secretKey (enc)   │
+│ email       │        │ accessToken(enc) │        │ status            │
+│ status      │        │ createdAt        │        │ createdAt         │
+│ createdAt   │        │ updatedAt        │        │ updatedAt         │
+└──────┬──────┘        │ @@unique         │        └───────────────────┘
+       │               │ (userId, wabaId) │
        │               └──────────────────┘
        │ 1
        │
@@ -501,9 +500,16 @@ WABA A                                         WABA B
 ├────────────────────────────┼─────────────────────────────────────────┤
 │ DELETE /api-keys/:id       │ DEL apiKey:{accessKey}                  │
 ├────────────────────────────┼─────────────────────────────────────────┤
-│ Phone number sync          │ SET phone:{phoneNumberId}               │
-│ (POST /phone-numbers/sync) │ → { userId, wabaId, accessToken }      │
+│ POST /connect              │ SET phone:{phoneNumberId}               │
+│ (Embedded Signup)          │ → { userId, wabaId, accessToken }      │
+│                            │ (one SET per phone number in the WABA) │
 │                            │ SADD user:{userId}:phones {phoneId}     │
+│                            │ (planned — not yet implemented)         │
+├────────────────────────────┼─────────────────────────────────────────┤
+│ POST /phone-numbers/sync   │ SET phone:{phoneNumberId}               │
+│                            │ → { userId, wabaId, accessToken }      │
+│                            │ SADD user:{userId}:phones {phoneId}     │
+│                            │ (planned — not yet implemented)         │
 ├────────────────────────────┼─────────────────────────────────────────┤
 │ WABA disconnect            │ SMEMBERS user:{userId}:phones           │
 │                            │   → for each: DEL phone:{phoneId}      │
@@ -511,11 +517,6 @@ WABA A                                         WABA B
 ├────────────────────────────┼─────────────────────────────────────────┤
 │ Access token refresh       │ For each phoneId in WABA:               │
 │                            │   SET phone:{phoneId}.accessToken       │
-├────────────────────────────┼─────────────────────────────────────────┤
-│ POST /connect (OAuth)      │ SETEX waba:connect:state:{uuid} 300    │
-│                            │ → { userId, accessToken, businesses }   │
-├────────────────────────────┼─────────────────────────────────────────┤
-│ OAuth flow complete        │ DEL waba:connect:state:{uuid}           │
 └────────────────────────────┴─────────────────────────────────────────┘
 ```
 
@@ -525,8 +526,7 @@ WABA A                                         WABA B
 |------|--------------|-----------------|
 | API key auth lookup | ✅ Primary | ✅ Source of truth |
 | Phone → access token | ✅ Primary | ✅ Source of truth (`UserWhatsapp`) |
-| User phone index | ✅ Only (for invalidation) | Derivable from `UserWhatsapp` |
-| OAuth flow state | ✅ Only (TTL: 300s) | ❌ Never persisted |
+| User phone index | ✅ Planned (for invalidation) | Derivable from `WabaPhoneNumber` |
 | Message records | ❌ No | ✅ Only |
 | Contacts | ❌ No | ✅ Only |
 | Templates | ❌ No | ✅ Only |
@@ -644,22 +644,20 @@ WABA A                                         WABA B
 │                         REST API Surface                             │
 ├────────────────────────────────────────────────────────────────────┤
 │  AUTH & USER                                                         │
+│   POST  /auth/signup               None                              │
+│   POST  /auth/login                None                              │
 │   GET   /user/profile              JWT                               │
 │   POST  /user/test-token           None  (dev only)                 │
 │   POST  /api-keys                  JWT                               │
 │   GET   /api-keys                  JWT                               │
-│   DELETE /api-keys/:id             JWT                               │
+│   DELETE /api-keys/:id             JWT  (planned)                   │
 ├────────────────────────────────────────────────────────────────────┤
 │  ACCOUNT MANAGEMENT                                                  │
 │   POST  /connect                   JWT                               │
-│   GET   /connect/businesses        None  (OAuth state)              │
-│   GET   /connect/:id/ownedWABAs    None  (OAuth state)              │
-│   GET   /connect/:id/clientWABAs   None  (OAuth state)              │
-│   POST  /connect/debugToken        None                              │
 │   GET   /wabas                     JWT                               │
 │   GET   /wabas/:wabaId             JWT                               │
 │   POST  /wabas/:wabaId/sync        JWT                               │
-│   DELETE /wabas/:wabaId/connect    JWT                               │
+│   DELETE /wabas/:wabaId/connect    JWT  (planned)                   │
 │   GET   /wabas/:id/phone-numbers   JWT                               │
 │   POST  /wabas/:id/phone-numbers/sync  JWT                          │
 ├────────────────────────────────────────────────────────────────────┤

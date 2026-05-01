@@ -15,7 +15,7 @@
 
 | Wave | Name | Status | Notes |
 |------|------|--------|-------|
-| 6.1 | Foundation Tests | 🔄 Partial | Prisma + Redis spec files exist; crypto missing |
+| 6.1 | Foundation Tests | ✅ Complete | PrismaService, RedisService, EncryptionService, BaseResponseInterceptor, GlobalExceptionFilter, BaseResponse — 42 tests passing |
 | 6.2 | Auth & User Tests | ❌ Not Started | No spec files for user module |
 | 6.3 | Connect Tests | 🔄 Partial | Both spec files exist; test bodies pending |
 | 6.4 | WABA Tests | ❌ Not Started | No spec files |
@@ -29,8 +29,12 @@
 
 | File | Status | Notes |
 |------|--------|-------|
-| `src/prisma/prisma.service.spec.ts` | ✅ Exists | Body unknown |
-| `src/redis/redis.service.spec.ts` | ✅ Exists | Body unknown |
+| `src/prisma/prisma.service.spec.ts` | ✅ Complete | Constructor, lifecycle |
+| `src/redis/redis.service.spec.ts` | ✅ Complete | All cache methods |
+| `src/common/services/crypto.service.spec.ts` | ✅ Complete | Encrypt/decrypt, guards |
+| `src/common/interceptors/base-response.interceptor.spec.ts` | ✅ Complete | All data wrapping branches |
+| `src/common/filters/global-exception.filter.spec.ts` | ✅ Complete | HTTP and non-HTTP exceptions |
+| `src/common/responses/base-response.spec.ts` | ✅ Complete | All static methods |
 | `src/connect/connect.service.spec.ts` | ✅ Exists | Body unknown |
 | `src/connect/connect.controller.spec.ts` | ✅ Exists | Body unknown |
 | `src/common/services/crypto.service.spec.ts` | ❌ Missing | — |
@@ -53,7 +57,7 @@
 
 | Module | Estimated Coverage | Target |
 |--------|--------------------|--------|
-| Common / Foundation | ~20% | 80% |
+| Common / Foundation | ~85% | 80% |
 | User | 0% | 80% |
 | Connect | ~30% | 80% |
 | WABA | 0% | 80% |

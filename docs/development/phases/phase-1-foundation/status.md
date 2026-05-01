@@ -44,13 +44,14 @@
 
 ## Test Coverage
 
-| File | Test File | Status |
-|------|-----------|--------|
-| `prisma.service.ts` | `prisma.service.spec.ts` | ✅ Exists |
-| `redis.service.ts` | `redis.service.spec.ts` | ✅ Exists |
-| `crypto.service.ts` | — | ❌ Missing |
-| `base-response.interceptor.ts` | — | ❌ Missing |
-| `global-exception.filter.ts` | — | ❌ Missing |
+| File | Test File | Status | Tests |
+|------|-----------|--------|-------|
+| `prisma.service.ts` | `prisma.service.spec.ts` | ✅ Complete | Constructor guard, onModuleInit, onModuleDestroy |
+| `redis.service.ts` | `redis.service.spec.ts` | ✅ Complete | All cache methods: getState, createState, updateState, getUserCache, setUserCache, invalidateUserCache, setApiKey, getApiKey |
+| `crypto.service.ts` | `crypto.service.spec.ts` | ✅ Complete | Constructor guards, encrypt format, decrypt round-trip, tamper detection |
+| `base-response.interceptor.ts` | `base-response.interceptor.spec.ts` | ✅ Complete | StreamableFile passthrough, pre-wrapped passthrough, plain data wrap |
+| `global-exception.filter.ts` | `global-exception.filter.spec.ts` | ✅ Complete | HttpException structured/string, non-HTTP 500 |
+| `base-response.ts` | `base-response.spec.ts` | ✅ Complete | success, created, redirect, error, fieldError, paginate |
 
 ---
 

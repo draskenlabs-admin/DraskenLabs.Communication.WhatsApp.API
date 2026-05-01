@@ -7,9 +7,20 @@ import { BaseResponse } from './common/responses/base-response';
 import { FieldErrorResponse } from './common/responses/field-error.util';
 import { ValidationPipe } from '@nestjs/common';
 import * as cookieParser from 'cookie-parser';
+import { json } from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bodyParser: false });
+
+  // Preserve raw body bytes for webhook HMAC signature validation
+  app.use(
+    json({
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
+
   app.use(cookieParser());
   app.enableCors();
   app.useGlobalPipes(

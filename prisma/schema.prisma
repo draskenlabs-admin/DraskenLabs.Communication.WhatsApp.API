@@ -93,6 +93,7 @@ model Waba {
   org             Organisation      @relation(fields: [orgId], references: [id])
   UserWhatsapp    UserWhatsapp[]
   WabaPhoneNumber WabaPhoneNumber[]
+  InboundMessage  InboundMessage[]
 }
 
 model WabaPhoneNumber {
@@ -161,4 +162,29 @@ model Message {
 
   user User         @relation(fields: [userId], references: [id])
   org  Organisation @relation(fields: [orgId], references: [id])
+}
+
+model InboundMessage {
+  id            Int      @id @default(autoincrement())
+  metaMessageId String   @unique
+  wabaId        String
+  phoneNumberId String
+  from          String
+  senderName    String?
+  type          String
+  payload       Json
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+
+  waba Waba @relation(fields: [wabaId], references: [wabaId])
+}
+
+model WebhookEvent {
+  id        Int      @id @default(autoincrement())
+  eventType String
+  wabaId    String
+  payload   Json
+  processed Boolean  @default(false)
+  error     String?
+  createdAt DateTime @default(now())
 }

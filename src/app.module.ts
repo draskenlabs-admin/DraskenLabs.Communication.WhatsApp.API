@@ -13,6 +13,7 @@ import { WabaPhoneNumberModule } from './waba-phone-number/waba-phone-number.mod
 import { AuthModule } from './auth/auth.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrgModule } from './org/org.module';
+import { WebhooksModule } from './webhooks/webhooks.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { OrgModule } from './org/org.module';
     AuthModule,
     MessagingModule,
     OrgModule,
+    WebhooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -56,6 +56,21 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     return stateId;
   }
 
+  // User Cache
+  async getUserCache(userId: number): Promise<{ id: number; clerkId: string; email: string; firstName: string; lastName: string; status: boolean } | null> {
+    const raw = await this.client.get(`user:${userId}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }
+
+  async setUserCache(userId: number, user: { id: number; clerkId: string; email: string; firstName: string; lastName: string; status: boolean }): Promise<void> {
+    await this.client.set(`user:${userId}`, JSON.stringify(user), 'EX', 900); // 15 min TTL
+  }
+
+  async invalidateUserCache(userId: number): Promise<void> {
+    await this.client.del(`user:${userId}`);
+  }
+
   // API Keys
   async setApiKey(
     accessKey: string,

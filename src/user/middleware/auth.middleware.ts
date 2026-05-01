@@ -6,12 +6,14 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { Request, Response, NextFunction } from 'express';
 import { UserService } from '../user.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   constructor(
     private readonly jwtService: JwtService,
     private readonly userService: UserService,
+    private readonly redisService: RedisService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
@@ -23,16 +25,33 @@ export class AuthMiddleware implements NestMiddleware {
     const token = authHeader.split(' ')[1];
     try {
       const payload = await this.jwtService.verifyAsync(token);
-      const user = await this.userService.findById(payload.sub);
+      const userId: number = payload.sub;
+
+      let user = await this.redisService.getUserCache(userId);
 
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        const dbUser = await this.userService.findById(userId);
+        if (!dbUser) throw new UnauthorizedException('User not found');
+
+        user = {
+          id: dbUser.id,
+          clerkId: dbUser.clerkId,
+          email: dbUser.email,
+          firstName: dbUser.firstName,
+          lastName: dbUser.lastName,
+          status: dbUser.status,
+        };
+        await this.redisService.setUserCache(userId, user);
       }
 
-      // Attach user to request context
+      if (!user.status) {
+        throw new UnauthorizedException('Account is deactivated');
+      }
+
       (req as any).user = user;
       next();
     } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid token');
     }
   }

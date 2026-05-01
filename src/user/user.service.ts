@@ -23,4 +23,25 @@ export class UserService {
       where: { email },
     });
   }
+
+  async findOrCreateByClerkId(data: {
+    clerkId: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<User> {
+    const existing = await this.prisma.user.findUnique({
+      where: { clerkId: data.clerkId },
+    });
+    if (existing) return existing;
+
+    return this.prisma.user.create({
+      data: {
+        clerkId: data.clerkId,
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+      },
+    });
+  }
 }

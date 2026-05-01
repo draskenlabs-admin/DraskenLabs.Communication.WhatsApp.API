@@ -4,10 +4,9 @@ import { MessagingController } from './messaging.controller';
 import { ApiKeyModule } from 'src/api-key/api-key.module';
 import { ApiKeyAuthMiddleware } from 'src/api-key/middleware/api-key-auth.middleware';
 import { UserModule } from 'src/user/user.module';
-import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, ApiKeyModule, UserModule],
+  imports: [ApiKeyModule, UserModule],
   providers: [MessagingService],
   controllers: [MessagingController],
 })

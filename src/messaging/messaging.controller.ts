@@ -27,17 +27,18 @@ export class MessagingController {
   @ApiWrappedOkResponse({ dataDto: SendMessageResponseDto, description: 'Message sent' })
   async send(@Req() req: Request, @Body() dto: SendMessageDto): Promise<SendMessageResponseDto> {
     const user = (req as any).user;
-    if (!user) throw new UnauthorizedException('User not found in context');
-    return this.messagingService.sendMessage(user.id, dto);
+    const orgId = (req as any).orgId;
+    if (!user || !orgId) throw new UnauthorizedException('User not found in context');
+    return this.messagingService.sendMessage(user.id, orgId, dto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all messages for current user' })
+  @ApiOperation({ summary: 'List all messages for current organisation' })
   @ApiWrappedOkResponse({ dataDto: MessageListItemDto, isArray: true, description: 'Message list' })
   async findAll(@Req() req: Request): Promise<MessageListItemDto[]> {
-    const user = (req as any).user;
-    if (!user) throw new UnauthorizedException('User not found in context');
-    return this.messagingService.findAll(user.id);
+    const orgId = (req as any).orgId;
+    if (!orgId) throw new UnauthorizedException('Organisation not found in context');
+    return this.messagingService.findAll(orgId);
   }
 
   @Get(':id')
@@ -47,8 +48,8 @@ export class MessagingController {
     @Req() req: Request,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<MessageListItemDto> {
-    const user = (req as any).user;
-    if (!user) throw new UnauthorizedException('User not found in context');
-    return this.messagingService.findOne(user.id, id);
+    const orgId = (req as any).orgId;
+    if (!orgId) throw new UnauthorizedException('Organisation not found in context');
+    return this.messagingService.findOne(orgId, id);
   }
 }

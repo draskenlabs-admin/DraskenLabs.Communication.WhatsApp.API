@@ -96,15 +96,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.del(`phone:${phoneNumberId}`);
   }
 
-  // API Key Cache — apiKey:{accessKey} → { userId, secretKey: encrypted }
-  async setApiKeyCache(accessKey: string, userId: number, encryptedSecretKey: string): Promise<void> {
+  // API Key Cache — apiKey:{accessKey} → { userId, orgId, secretKey: encrypted }
+  async setApiKeyCache(accessKey: string, userId: number, orgId: number, encryptedSecretKey: string): Promise<void> {
     await this.client.set(
       `apiKey:${accessKey}`,
-      JSON.stringify({ userId, secretKey: encryptedSecretKey }),
+      JSON.stringify({ userId, orgId, secretKey: encryptedSecretKey }),
     );
   }
 
-  async getApiKeyCache(accessKey: string): Promise<{ userId: number; secretKey: string } | null> {
+  async getApiKeyCache(accessKey: string): Promise<{ userId: number; orgId: number; secretKey: string } | null> {
     const raw = await this.client.get(`apiKey:${accessKey}`);
     if (!raw) return null;
     return JSON.parse(raw);

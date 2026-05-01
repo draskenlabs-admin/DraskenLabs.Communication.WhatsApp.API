@@ -12,6 +12,7 @@ import { WabaModule } from './waba/waba.module';
 import { WabaPhoneNumberModule } from './waba-phone-number/waba-phone-number.module';
 import { AuthModule } from './auth/auth.module';
 import { MessagingModule } from './messaging/messaging.module';
+import { OrgModule } from './org/org.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MessagingModule } from './messaging/messaging.module';
     WabaPhoneNumberModule,
     AuthModule,
     MessagingModule,
+    OrgModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -33,8 +33,8 @@ export class ApiKeyAuthMiddleware implements NestMiddleware {
         throw new UnauthorizedException('Invalid API key');
       }
 
-      await this.redisService.setApiKeyCache(accessKey, dbKey.userId, dbKey.secretKey);
-      cachedKey = { userId: dbKey.userId, secretKey: dbKey.secretKey };
+      await this.redisService.setApiKeyCache(accessKey, dbKey.userId, dbKey.orgId, dbKey.secretKey);
+      cachedKey = { userId: dbKey.userId, orgId: dbKey.orgId, secretKey: dbKey.secretKey };
     }
 
     let decryptedSecret: string;
@@ -70,6 +70,7 @@ export class ApiKeyAuthMiddleware implements NestMiddleware {
     }
 
     (req as any).user = user;
+    (req as any).orgId = cachedKey.orgId;
     (req as any).authType = 'apiKey';
     next();
   }

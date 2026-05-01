@@ -11,22 +11,17 @@ export class WabaService {
     private readonly encryptionService: EncryptionService,
   ) {}
 
-  async findAllByUserId(userId: number): Promise<Waba[]> {
-    return this.prisma.waba.findMany({
-      where: { userId },
-    });
+  async findAllByOrgId(orgId: number): Promise<Waba[]> {
+    return this.prisma.waba.findMany({ where: { orgId } });
   }
 
-  async findByWabaId(userId: number, wabaId: string): Promise<Waba> {
-    const waba = await this.prisma.waba.findFirst({
-      where: { userId, wabaId },
-    });
+  async findByWabaId(orgId: number, wabaId: string): Promise<Waba> {
+    const waba = await this.prisma.waba.findFirst({ where: { orgId, wabaId } });
     if (!waba) throw new NotFoundException('WABA not found');
     return waba;
   }
 
   async getWabaDetailsFromMeta(userId: number, wabaId: string): Promise<any> {
-    // To get details from Meta, we need an access token associated with this WABA
     const userWhatsapp = await this.prisma.userWhatsapp.findFirst({
       where: { userId, wabaId },
     });
@@ -55,6 +50,7 @@ export class WabaService {
   async createOrUpdateWaba(data: {
     wabaId: string;
     userId: number;
+    orgId: number;
     name?: string;
     currency?: string;
     timezoneId?: string;
@@ -71,6 +67,7 @@ export class WabaService {
       create: {
         wabaId: data.wabaId,
         userId: data.userId,
+        orgId: data.orgId,
         name: data.name,
         currency: data.currency,
         timezoneId: data.timezoneId,

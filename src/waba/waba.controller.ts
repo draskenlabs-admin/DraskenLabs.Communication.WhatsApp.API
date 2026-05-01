@@ -26,9 +26,9 @@ export class WabaController {
     description: 'List all WABAs',
   })
   async findAll(@Req() req: Request): Promise<WabaResponseDto[]> {
-    const user = (req as any).user;
-    if (!user) throw new UnauthorizedException('User not found in context');
-    return this.wabaService.findAllByUserId(user.id);
+    const orgId = (req as any).orgId;
+    if (!orgId) throw new UnauthorizedException('Organisation not found in context');
+    return this.wabaService.findAllByOrgId(orgId);
   }
 
   @Get('/:wabaId')
@@ -44,7 +44,7 @@ export class WabaController {
   ): Promise<any> {
     const user = (req as any).user;
     if (!user) throw new UnauthorizedException('User not found in context');
-    return this.wabaService.getWabaDetailsFromMeta(user.id, wabaId);
+    return this.wabaService.getWabaDetailsFromMeta(user.id, wabaId); // token lookup by userId — unchanged
   }
 
   @Post('/:wabaId/sync')
@@ -68,9 +68,13 @@ export class WabaController {
       wabaId,
     );
 
+    const orgId = (req as any).orgId;
+    if (!orgId) throw new UnauthorizedException('Organisation not found in context');
+
     return this.wabaService.createOrUpdateWaba({
       wabaId: metaDetails.id,
       userId: user.id,
+      orgId,
       name: metaDetails.name,
       currency: metaDetails.currency,
       timezoneId: metaDetails.timezone_id,

@@ -49,6 +49,8 @@ export class AuthMiddleware implements NestMiddleware {
       }
 
       (req as any).user = user;
+      (req as any).orgId = payload.orgId;
+      (req as any).role = payload.role;
       next();
     } catch (error) {
       if (error instanceof UnauthorizedException) throw error;

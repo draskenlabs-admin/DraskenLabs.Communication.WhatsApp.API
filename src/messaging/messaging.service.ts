@@ -22,7 +22,7 @@ export class MessagingService {
     private readonly encryptionService: EncryptionService,
   ) {}
 
-  async sendMessage(userId: number, dto: SendMessageDto): Promise<SendMessageResponseDto> {
+  async sendMessage(userId: number, orgId: number, dto: SendMessageDto): Promise<SendMessageResponseDto> {
     const phoneCache = await this.redisService.getPhoneCache(dto.phoneNumberId);
 
     if (!phoneCache) {
@@ -60,6 +60,7 @@ export class MessagingService {
         payload: metaPayload as object,
         status: 'sent',
         userId,
+        orgId,
       },
     });
 
@@ -74,9 +75,9 @@ export class MessagingService {
     };
   }
 
-  async findAll(userId: number): Promise<MessageListItemDto[]> {
+  async findAll(orgId: number): Promise<MessageListItemDto[]> {
     const messages = await this.prisma.message.findMany({
-      where: { userId },
+      where: { orgId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -92,12 +93,12 @@ export class MessagingService {
     }));
   }
 
-  async findOne(userId: number, messageId: number): Promise<MessageListItemDto> {
+  async findOne(orgId: number, messageId: number): Promise<MessageListItemDto> {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
     });
 
-    if (!message || message.userId !== userId) {
+    if (!message || message.orgId !== orgId) {
       throw new NotFoundException('Message not found');
     }
 

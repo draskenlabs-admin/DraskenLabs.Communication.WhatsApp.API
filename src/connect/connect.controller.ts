@@ -23,7 +23,8 @@ export class ConnectController {
     @Req() req: Request,
   ): Promise<ConnectWhatsAppResponseDTO> {
     const user = (req as any).user;
-    if (!user) throw new UnauthorizedException('User not found in context');
-    return this.connectService.connectWhatsapp(body, user.id);
+    const orgId = (req as any).orgId;
+    if (!user || !orgId) throw new UnauthorizedException('User not found in context');
+    return this.connectService.connectWhatsapp(body, user.id, orgId);
   }
 }

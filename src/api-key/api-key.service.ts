@@ -13,26 +13,23 @@ export class ApiKeyService {
     private readonly redisService: RedisService,
   ) {}
 
-  async createApiKey(userId: number, dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
-    // Generate access key (public) and secret key (shown once)
+  async createApiKey(userId: number, orgId: number, dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
     const accessKey = `ak_${crypto.randomBytes(12).toString('hex')}`;
     const secretKey = `sk_${crypto.randomBytes(24).toString('hex')}`;
     const encryptedSecretKey = this.encryptionService.encrypt(secretKey);
 
-    // Persist to DB
     await this.prisma.userApiKey.create({
-      data: { userId, accessKey, secretKey: encryptedSecretKey },
+      data: { userId, orgId, accessKey, secretKey: encryptedSecretKey },
     });
 
-    // Cache in Redis — user-scoped, no phone binding at creation time
-    await this.redisService.setApiKeyCache(accessKey, userId, encryptedSecretKey);
+    await this.redisService.setApiKeyCache(accessKey, userId, orgId, encryptedSecretKey);
 
     return { accessKey, secretKey };
   }
 
-  async findAllByUserId(userId: number) {
+  async findAllByOrgId(orgId: number) {
     return this.prisma.userApiKey.findMany({
-      where: { userId },
+      where: { orgId },
       select: { id: true, accessKey: true, status: true, createdAt: true },
     });
   }

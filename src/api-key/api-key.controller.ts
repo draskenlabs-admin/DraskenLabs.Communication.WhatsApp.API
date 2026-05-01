@@ -19,10 +19,9 @@ export class ApiKeyController {
   })
   async create(@Req() req: Request, @Body() dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
     const user = (req as any).user;
-    if (!user) {
-      throw new UnauthorizedException('User not found in context');
-    }
-    return this.apiKeyService.createApiKey(user.id, dto);
+    const orgId = (req as any).orgId;
+    if (!user || !orgId) throw new UnauthorizedException('User not found in context');
+    return this.apiKeyService.createApiKey(user.id, orgId, dto);
   }
 
   @Get()
@@ -34,11 +33,9 @@ export class ApiKeyController {
     description: 'List API keys',
   })
   async findAll(@Req() req: Request) {
-    const user = (req as any).user;
-    if (!user) {
-      throw new UnauthorizedException('User not found in context');
-    }
-    return this.apiKeyService.findAllByUserId(user.id);
+    const orgId = (req as any).orgId;
+    if (!orgId) throw new UnauthorizedException('Organisation not found in context');
+    return this.apiKeyService.findAllByOrgId(orgId);
   }
 
   @Delete(':id')

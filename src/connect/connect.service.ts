@@ -18,6 +18,7 @@ export class ConnectService {
   async connectWhatsapp(
     body: ConnectWhatsAppRequestDTO,
     userId: number,
+    orgId: number,
   ): Promise<ConnectWhatsAppResponseDTO> {
     // 1. Exchange the Meta OAuth code for an access token
     const tokenRes = await axios.get(
@@ -47,6 +48,7 @@ export class ConnectService {
     await this.wabaService.createOrUpdateWaba({
       wabaId: body.wabaId,
       userId,
+      orgId,
       name: wabaMeta.name,
       currency: wabaMeta.currency,
       timezoneId: wabaMeta.timezone_id?.toString(),

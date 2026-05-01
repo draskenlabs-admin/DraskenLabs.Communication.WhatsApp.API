@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateIf } from 'class-validator';
 
 export enum MessageTypeEnum {
   text = 'text',
@@ -45,4 +45,25 @@ export class SendMessageDto {
   @IsOptional()
   @IsString()
   caption?: string;
+
+  @ApiPropertyOptional({ description: 'Template name (required for type=template)' })
+  @ValidateIf((o) => o.type === MessageTypeEnum.template)
+  @IsString()
+  @IsNotEmpty()
+  templateName?: string;
+
+  @ApiPropertyOptional({ description: 'Template language code e.g. en_US (required for type=template)' })
+  @ValidateIf((o) => o.type === MessageTypeEnum.template)
+  @IsString()
+  @IsNotEmpty()
+  templateLanguage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Template component parameters (optional — variable substitutions per component)',
+    type: 'array',
+    items: { type: 'object' },
+  })
+  @IsOptional()
+  @IsArray()
+  templateComponents?: any[];
 }

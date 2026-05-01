@@ -5,6 +5,7 @@ import { WebhookSignatureMiddleware } from './middleware/webhook-signature.middl
 import { InboundMessageHandler } from './handlers/inbound-message.handler';
 import { StatusUpdateHandler } from './handlers/status-update.handler';
 import { AccountHandler } from './handlers/account.handler';
+import { TemplateStatusHandler } from './handlers/template-status.handler';
 
 @Module({
   controllers: [WebhooksController],
@@ -14,6 +15,7 @@ import { AccountHandler } from './handlers/account.handler';
     InboundMessageHandler,
     StatusUpdateHandler,
     AccountHandler,
+    TemplateStatusHandler,
   ],
 })
 export class WebhooksModule implements NestModule {

@@ -29,6 +29,7 @@ model Organisation {
   Waba       Waba[]
   UserApiKey UserApiKey[]
   Message    Message[]
+  Contact    Contact[]
 }
 
 model OrgMember {
@@ -91,9 +92,10 @@ model Waba {
 
   user            User              @relation(fields: [userId], references: [id])
   org             Organisation      @relation(fields: [orgId], references: [id])
-  UserWhatsapp    UserWhatsapp[]
-  WabaPhoneNumber WabaPhoneNumber[]
-  InboundMessage  InboundMessage[]
+  UserWhatsapp     UserWhatsapp[]
+  WabaPhoneNumber  WabaPhoneNumber[]
+  InboundMessage   InboundMessage[]
+  MessageTemplate  MessageTemplate[]
 }
 
 model WabaPhoneNumber {
@@ -140,6 +142,22 @@ enum MessageType {
   contacts
 }
 
+enum TemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+  DELETED
+  DISABLED
+  IN_APPEAL
+}
+
+enum TemplateCategory {
+  AUTHENTICATION
+  MARKETING
+  UTILITY
+}
+
 enum MessageStatus {
   sent
   delivered
@@ -162,6 +180,40 @@ model Message {
 
   user User         @relation(fields: [userId], references: [id])
   org  Organisation @relation(fields: [orgId], references: [id])
+}
+
+model MessageTemplate {
+  id             Int              @id @default(autoincrement())
+  metaTemplateId String
+  wabaId         String
+  name           String
+  language       String
+  category       TemplateCategory
+  status         TemplateStatus   @default(PENDING)
+  components     Json
+  rejectedReason String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  waba Waba @relation(fields: [wabaId], references: [wabaId])
+
+  @@unique([wabaId, name, language])
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  orgId     Int
+  phone     String
+  name      String?
+  email     String?
+  optedOut  Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organisation @relation(fields: [orgId], references: [id])
+
+  @@unique([orgId, phone])
 }
 
 model InboundMessage {

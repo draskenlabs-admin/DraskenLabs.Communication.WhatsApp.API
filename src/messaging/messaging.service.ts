@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -8,6 +9,7 @@ import axios from 'axios';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
 import { EncryptionService } from 'src/common/services/crypto.service';
+import { ContactsService } from 'src/contacts/contacts.service';
 import { SendMessageDto, MessageTypeEnum } from './dto/send-message.dto';
 import { SendMessageResponseDto, MessageListItemDto } from './dto/message-response.dto';
 
@@ -20,6 +22,7 @@ export class MessagingService {
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
     private readonly encryptionService: EncryptionService,
+    private readonly contactsService: ContactsService,
   ) {}
 
   async sendMessage(userId: number, orgId: number, dto: SendMessageDto): Promise<SendMessageResponseDto> {
@@ -34,6 +37,9 @@ export class MessagingService {
     if (phoneCache.userId !== userId) {
       throw new ForbiddenException('Phone number does not belong to your account');
     }
+
+    const optedOut = await this.contactsService.isOptedOut(orgId, dto.to);
+    if (optedOut) throw new BadRequestException(`Recipient ${dto.to} has opted out of messages`);
 
     const plainToken = this.encryptionService.decrypt(phoneCache.accessToken);
     const metaPayload = this.buildMetaPayload(dto);
@@ -143,6 +149,13 @@ export class MessagingService {
         base.document = dto.caption
           ? { link: dto.mediaUrl, caption: dto.caption }
           : { link: dto.mediaUrl };
+        break;
+      case MessageTypeEnum.template:
+        base.template = {
+          name: dto.templateName,
+          language: { code: dto.templateLanguage },
+          ...(dto.templateComponents?.length ? { components: dto.templateComponents } : {}),
+        };
         break;
       default:
         break;

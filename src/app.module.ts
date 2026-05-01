@@ -14,6 +14,8 @@ import { AuthModule } from './auth/auth.module';
 import { MessagingModule } from './messaging/messaging.module';
 import { OrgModule } from './org/org.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { TemplatesModule } from './templates/templates.module';
+import { ContactsModule } from './contacts/contacts.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     MessagingModule,
     OrgModule,
     WebhooksModule,
+    TemplatesModule,
+    ContactsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { InboundMessageHandler } from './handlers/inbound-message.handler';
 import { StatusUpdateHandler } from './handlers/status-update.handler';
 import { AccountHandler } from './handlers/account.handler';
+import { TemplateStatusHandler } from './handlers/template-status.handler';
 
 @Injectable()
 export class WebhooksService {
@@ -13,6 +14,7 @@ export class WebhooksService {
     private readonly inboundHandler: InboundMessageHandler,
     private readonly statusHandler: StatusUpdateHandler,
     private readonly accountHandler: AccountHandler,
+    private readonly templateStatusHandler: TemplateStatusHandler,
   ) {}
 
   async processPayload(body: any): Promise<void> {
@@ -49,6 +51,9 @@ export class WebhooksService {
     switch (field) {
       case 'messages':
         await this.handleMessagesField(wabaId, value);
+        break;
+      case 'message_template_status_update':
+        await this.templateStatusHandler.handle(value);
         break;
       case 'account_update':
         await this.accountHandler.handleAccountUpdate(value);

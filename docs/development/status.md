@@ -29,7 +29,9 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Phase 4 – WABA & Phone Numbers | ✅ Complete | 100% |
 | Phase 5 – API Key Management | ✅ Complete | 100% |
 | Phase 6 – Organisation & Multi-tenancy | ✅ Complete | 100% |
-| Phase 7 – Messaging | 🔄 In Progress | 60% |
+| Phase 7 – Messaging | ✅ Complete | 100% |
+| Phase 7b – Templates | ✅ Complete | 100% |
+| Phase 7c – Contacts | ✅ Complete | 100% |
 | Phase 8 – Webhooks | ✅ Complete | 100% |
 | Phase 9 – Testing & Documentation | 🔄 In Progress | 40% |
 
@@ -42,10 +44,10 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | [Auth](./modules/auth/) | ✅ Complete | 100% | Clerk signup/login, JWT middleware (cache-first), API key auth middleware, API key revocation all live |
 | [Organisation](./modules/org/) | ✅ Complete | 100% | Multi-org support — create, switch, list orgs; team member invite/role/remove |
 | [Account Management](./modules/account-management/) | 🔄 In Progress | 85% | Connect redesigned (Embedded Signup), phone cache populated on connect. Disconnect endpoint still missing. |
-| [Messaging](./modules/messaging/) | 🔄 In Progress | 60% | POST /messages, GET /messages, GET /messages/:id live. Template messages pending. |
-| [Templates](./modules/templates/) | ❌ Not Started | 0% | Required for proactive messaging |
+| [Messaging](./modules/messaging/) | ✅ Complete | 100% | POST /messages (text/media/template), GET /messages, GET /messages/:id live. Opt-out enforced at send time. |
+| [Templates](./modules/templates/) | ✅ Complete | 100% | Sync from Meta, list, get. Status kept current by webhook handler. |
 | [Webhooks](./modules/webhooks/) | ✅ Complete | 100% | GET verification + POST HMAC-signed event processing. Inbound messages, status updates, phone quality, account events all handled. |
-| [Contacts](./modules/contacts/) | ❌ Not Started | 0% | Required for recipient management |
+| [Contacts](./modules/contacts/) | ✅ Complete | 100% | CRUD, opt-out flag, enforced at send time in MessagingService |
 | [Analytics](./modules/analytics/) | ❌ Not Started | 0% | Depends on all other modules |
 
 ---
@@ -80,6 +82,14 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | POST | `/messages` | API Key | ✅ Live |
 | GET | `/messages` | API Key | ✅ Live |
 | GET | `/messages/:id` | API Key | ✅ Live |
+| POST | `/templates/sync/:wabaId` | JWT | ✅ Live |
+| GET | `/templates` | JWT | ✅ Live |
+| GET | `/templates/:id` | JWT | ✅ Live |
+| POST | `/contacts` | JWT | ✅ Live |
+| GET | `/contacts` | JWT | ✅ Live |
+| GET | `/contacts/:id` | JWT | ✅ Live |
+| PATCH | `/contacts/:id` | JWT | ✅ Live |
+| DELETE | `/contacts/:id` | JWT | ✅ Live |
 | GET | `/webhooks` | None | ✅ Live (Meta verification challenge) |
 | POST | `/webhooks` | HMAC-SHA256 | ✅ Live (inbound messages, status updates, phone quality) |
 
@@ -89,8 +99,6 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 
 | Gap | Module | Priority | Impact |
 |-----|--------|----------|--------|
-| Template management | Templates | 🟠 High | Required for proactive messaging |
-| Contact management | Contacts | 🟠 High | No recipient tracking |
 | WABA disconnect endpoint | Account Management | 🟡 Medium | No way to revoke WABA connection |
 | Test coverage (~8% overall) | All | 🟡 Medium | Reliability risk |
 | Analytics and reporting | Analytics | 🟢 Low | Post-launch |
@@ -109,7 +117,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | `WabaPhoneNumber` | ✅ Live | — |
 | `UserApiKey` | ✅ Live | — |
 | `Message` | ✅ Live | Outbound message records with status tracking |
-| `MessageTemplate` | ❌ Missing | Required for Templates module |
+| `MessageTemplate` | ✅ Live | Synced from Meta, status updated by webhook |
 | `WebhookEvent` | ✅ Live | Raw event log with processed/error tracking |
 | `InboundMessage` | ✅ Live | Inbound messages from customers, idempotent on metaMessageId |
-| `Contact` | ❌ Missing | Required for Contacts module |
+| `Contact` | ✅ Live | Org-scoped, opt-out flag enforced at send time |

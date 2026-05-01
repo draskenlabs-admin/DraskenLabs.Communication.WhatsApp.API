@@ -4,9 +4,10 @@ import { MessagingController } from './messaging.controller';
 import { ApiKeyModule } from 'src/api-key/api-key.module';
 import { ApiKeyAuthMiddleware } from 'src/api-key/middleware/api-key-auth.middleware';
 import { UserModule } from 'src/user/user.module';
+import { ContactsModule } from 'src/contacts/contacts.module';
 
 @Module({
-  imports: [ApiKeyModule, UserModule],
+  imports: [ApiKeyModule, UserModule, ContactsModule],
   providers: [MessagingService],
   controllers: [MessagingController],
 })

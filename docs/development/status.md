@@ -36,7 +36,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Module | Status | Completion | Notes |
 |--------|--------|-----------|-------|
 | [Auth](./modules/auth/) | 🔄 In Progress | 90% | Clerk signup/login added, Redis user cache live, user.status check added — API key auth strategy and revocation still missing |
-| [Account Management](./modules/account-management/) | 🔄 In Progress | 70% | Disconnect and phone registration missing |
+| [Account Management](./modules/account-management/) | 🔄 In Progress | 80% | Connect redesigned (Embedded Signup), phone cache populated on connect. Disconnect endpoint still missing. |
 | [Messaging](./modules/messaging/) | ❌ Not Started | 0% | Core product feature — priority |
 | [Templates](./modules/templates/) | ❌ Not Started | 0% | Required for proactive messaging |
 | [Webhooks](./modules/webhooks/) | ❌ Not Started | 0% | Required for inbound messages and status updates |
@@ -54,10 +54,7 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | POST | `/auth/login` | No | ✅ Live |
 | GET | `/user/profile` | JWT | ✅ Live |
 | POST | `/user/test-token` | No | ✅ Live (Dev only) |
-| POST | `/connect` | JWT | ✅ Live |
-| GET | `/connect/businesses` | No | ✅ Live |
-| GET | `/connect/:businessId/ownedWABAs` | No | ✅ Live |
-| GET | `/connect/:businessId/clientWABAs` | No | ✅ Live |
+| POST | `/connect` | JWT | ✅ Live (redesigned — Embedded Signup, auto phone sync) |
 | POST | `/connect/debugToken` | No | ✅ Live |
 | GET | `/wabas` | JWT | ✅ Live |
 | GET | `/wabas/:wabaId` | JWT | ✅ Live |

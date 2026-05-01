@@ -501,16 +501,16 @@ Target: raise coverage from ~8% to ≥80%.
 
 | Task | Gap | Done |
 |------|-----|------|
-| 2.1 | A5 — Generic Redis operations | ☐ |
-| 2.2 | A3 + C2 — API key Redis schema | ☐ |
+| 2.1 | A5 — Generic Redis operations | ✅ |
+| 2.2 | A3 + C2 — API key Redis schema | ✅ |
 
 ### Wave 3 — Phone Cache
 
 | Task | Gap | Done |
 |------|-----|------|
-| 3.1 | A1 + A2 — Phone cache Redis methods | ☐ |
-| 3.2 | F4 — Phone sync populates cache | ☐ |
-| 3.3 | F3 — Connect flow populates cache | ☐ |
+| 3.1 | A1 + A2 — Phone cache Redis methods | ✅ |
+| 3.2 | F4 — Phone sync populates cache | ✅ |
+| 3.3 | F3 — Connect flow populates cache | ✅ |
 
 ### Wave 4 — API Key Auth
 

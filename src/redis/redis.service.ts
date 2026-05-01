@@ -71,7 +71,50 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.del(`user:${userId}`);
   }
 
-  // API Keys
+  // Phone Cache — phone:{phoneNumberId} → { userId, wabaId, accessToken: encrypted }
+  async setPhoneCache(
+    phoneNumberId: string,
+    userId: number,
+    wabaId: string,
+    encryptedAccessToken: string,
+  ): Promise<void> {
+    await this.client.set(
+      `phone:${phoneNumberId}`,
+      JSON.stringify({ userId, wabaId, accessToken: encryptedAccessToken }),
+    );
+  }
+
+  async getPhoneCache(
+    phoneNumberId: string,
+  ): Promise<{ userId: number; wabaId: string; accessToken: string } | null> {
+    const raw = await this.client.get(`phone:${phoneNumberId}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }
+
+  async invalidatePhoneCache(phoneNumberId: string): Promise<void> {
+    await this.client.del(`phone:${phoneNumberId}`);
+  }
+
+  // API Key Cache — apiKey:{accessKey} → { userId, secretKey: encrypted }
+  async setApiKeyCache(accessKey: string, userId: number, encryptedSecretKey: string): Promise<void> {
+    await this.client.set(
+      `apiKey:${accessKey}`,
+      JSON.stringify({ userId, secretKey: encryptedSecretKey }),
+    );
+  }
+
+  async getApiKeyCache(accessKey: string): Promise<{ userId: number; secretKey: string } | null> {
+    const raw = await this.client.get(`apiKey:${accessKey}`);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  }
+
+  async deleteApiKeyCache(accessKey: string): Promise<void> {
+    await this.client.del(`apiKey:${accessKey}`);
+  }
+
+  // Legacy Hash-based API Key (kept for reference — superseded by setApiKeyCache)
   async setApiKey(
     accessKey: string,
     secretKey: string,

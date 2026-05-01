@@ -13,7 +13,6 @@ export class UserWhatsappService {
   async createOrUpdate(data: {
     userId: number;
     businessId: string;
-    phoneNumberId: string;
     wabaId: string;
     accessToken: string;
   }): Promise<UserWhatsapp> {
@@ -21,38 +20,36 @@ export class UserWhatsappService {
 
     return this.prisma.userWhatsapp.upsert({
       where: {
-        userId_businessId: {
+        userId_wabaId: {
           userId: data.userId,
-          businessId: data.businessId,
+          wabaId: data.wabaId,
         },
       },
       update: {
-        phoneNumberId: data.phoneNumberId,
-        wabaId: data.wabaId,
+        businessId: data.businessId,
         accessToken: encryptedToken,
       },
       create: {
         userId: data.userId,
         businessId: data.businessId,
-        phoneNumberId: data.phoneNumberId,
         wabaId: data.wabaId,
         accessToken: encryptedToken,
       },
     });
   }
 
-  async getDecryptedToken(userId: number, businessId: string): Promise<string | null> {
+  async getEncryptedToken(userId: number, wabaId: string): Promise<string | null> {
     const record = await this.prisma.userWhatsapp.findUnique({
-      where: {
-        userId_businessId: {
-          userId,
-          businessId,
-        },
-      },
+      where: { userId_wabaId: { userId, wabaId } },
     });
+    return record?.accessToken ?? null;
+  }
 
+  async getDecryptedToken(userId: number, wabaId: string): Promise<string | null> {
+    const record = await this.prisma.userWhatsapp.findUnique({
+      where: { userId_wabaId: { userId, wabaId } },
+    });
     if (!record) return null;
-
     return this.encryptionService.decrypt(record.accessToken);
   }
 

@@ -48,7 +48,7 @@ model OrgMember {
 
 model User {
   id          Int        @id @default(autoincrement())
-  clerkId     String     @unique
+  ssoId       String     @unique
   firstName   String
   lastName    String
   email       String     @unique

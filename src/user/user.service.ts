@@ -7,41 +7,26 @@ export class UserService {
   constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: number): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { id },
-    });
+    return this.prisma.user.findUnique({ where: { id } });
   }
 
-  async findByClerkId(clerkId: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { clerkId },
-    });
+  async findBySsoId(ssoId: string): Promise<User | null> {
+    return this.prisma.user.findUnique({ where: { ssoId } });
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+    return this.prisma.user.findUnique({ where: { email } });
   }
 
-  async findOrCreateByClerkId(data: {
-    clerkId: string;
+  async findOrCreateBySsoId(data: {
+    ssoId: string;
     email: string;
     firstName: string;
     lastName: string;
   }): Promise<User> {
-    const existing = await this.prisma.user.findUnique({
-      where: { clerkId: data.clerkId },
-    });
+    const existing = await this.prisma.user.findUnique({ where: { ssoId: data.ssoId } });
     if (existing) return existing;
 
-    return this.prisma.user.create({
-      data: {
-        clerkId: data.clerkId,
-        email: data.email,
-        firstName: data.firstName,
-        lastName: data.lastName,
-      },
-    });
+    return this.prisma.user.create({ data });
   }
 }

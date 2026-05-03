@@ -2,10 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
-const mockAuthService = {
-  signup: jest.fn(),
-  login: jest.fn(),
-};
+const mockAuthService = { handleCallback: jest.fn() };
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -19,21 +16,14 @@ describe('AuthController', () => {
     controller = module.get<AuthController>(AuthController);
   });
 
-  it('signup delegates to AuthService', async () => {
-    const dto = { email: 'a@b.com', password: 'pass', firstName: 'A', lastName: 'B' };
-    const response = { access_token: 'tok', user: {} };
-    mockAuthService.signup.mockResolvedValue(response);
+  describe('callback', () => {
+    it('delegates to AuthService.handleCallback', async () => {
+      const dto = { code: 'c1', codeVerifier: 'v1', redirectUri: 'https://app.com/cb' };
+      const response = { access_token: 'tok', user: { id: 1 } };
+      mockAuthService.handleCallback.mockResolvedValue(response);
 
-    await expect(controller.signup(dto as any)).resolves.toEqual(response);
-    expect(mockAuthService.signup).toHaveBeenCalledWith(dto);
-  });
-
-  it('login delegates to AuthService', async () => {
-    const dto = { email: 'a@b.com', password: 'pass' };
-    const response = { access_token: 'tok', user: {} };
-    mockAuthService.login.mockResolvedValue(response);
-
-    await expect(controller.login(dto as any)).resolves.toEqual(response);
-    expect(mockAuthService.login).toHaveBeenCalledWith(dto);
+      await expect(controller.callback(dto as any)).resolves.toEqual(response);
+      expect(mockAuthService.handleCallback).toHaveBeenCalledWith(dto);
+    });
   });
 });

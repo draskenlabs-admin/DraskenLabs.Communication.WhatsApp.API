@@ -35,7 +35,7 @@ export class AuthMiddleware implements NestMiddleware {
 
         user = {
           id: dbUser.id,
-          clerkId: dbUser.clerkId,
+          ssoId: dbUser.ssoId,
           email: dbUser.email,
           firstName: dbUser.firstName,
           lastName: dbUser.lastName,

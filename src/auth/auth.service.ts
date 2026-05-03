@@ -1,69 +1,40 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { ClerkService } from './clerk.service';
+import { SsoService } from './sso.service';
 import { UserService } from 'src/user/user.service';
 import { OrgService } from 'src/org/org.service';
-import { SignupDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
+import { AuthCallbackDto } from './dto/callback.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private readonly clerkService: ClerkService,
+    private readonly ssoService: SsoService,
     private readonly userService: UserService,
     private readonly orgService: OrgService,
     private readonly jwtService: JwtService,
   ) {}
 
-  async signup(dto: SignupDto): Promise<AuthResponseDto> {
-    const clerkUser = await this.clerkService.createUser(
-      dto.email,
-      dto.password,
-      dto.firstName,
-      dto.lastName,
-    );
+  async handleCallback(dto: AuthCallbackDto): Promise<AuthResponseDto> {
+    const tokens = await this.ssoService.exchangeCode(dto.code, dto.codeVerifier, dto.redirectUri);
+    const ssoUser = this.ssoService.decodeUserInfo(tokens.accessToken);
 
-    const user = await this.userService.findOrCreateByClerkId({
-      clerkId: clerkUser.id,
-      email: clerkUser.email_addresses[0].email_address,
-      firstName: clerkUser.first_name,
-      lastName: clerkUser.last_name,
+    let user = await this.userService.findOrCreateBySsoId({
+      ssoId: ssoUser.ssoId,
+      email: ssoUser.email,
+      firstName: ssoUser.firstName,
+      lastName: ssoUser.lastName,
     });
 
-    const orgName = `${user.firstName}'s Organisation`;
-    const { orgId, role } = await this.orgService.createOrg(orgName, user.id);
-
-    const access_token = await this.jwtService.signAsync({
-      sub: user.id,
-      email: user.email,
-      orgId,
-      role,
-    });
-
-    return { access_token, user };
-  }
-
-  async login(dto: LoginDto): Promise<AuthResponseDto> {
-    const clerkId = await this.clerkService.signInWithPassword(dto.email, dto.password);
-
-    let user = await this.userService.findByClerkId(clerkId);
-
-    if (!user) {
-      const clerkUser = await this.clerkService.getUserById(clerkId);
-      const provisioned = await this.userService.findOrCreateByClerkId({
-        clerkId: clerkUser.id,
-        email: clerkUser.email_addresses[0].email_address,
-        firstName: clerkUser.first_name,
-        lastName: clerkUser.last_name,
-      });
-      const orgName = `${provisioned.firstName}'s Organisation`;
-      await this.orgService.createOrg(orgName, provisioned.id);
-      user = await this.userService.findById(provisioned.id);
+    if (!user.status) {
+      throw new UnauthorizedException('Account is deactivated');
     }
 
-    if (!user || !user.status) {
-      throw new UnauthorizedException('Account is deactivated');
+    if (!user.activeOrgId) {
+      const orgName = `${user.firstName}'s Organisation`;
+      await this.orgService.createOrg(orgName, user.id);
+      const refreshed = await this.userService.findById(user.id);
+      if (refreshed) user = refreshed;
     }
 
     const orgId = user.activeOrgId;

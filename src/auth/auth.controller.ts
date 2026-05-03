@@ -1,34 +1,27 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { SignupDto } from './dto/signup.dto';
+import { AuthCallbackDto } from './dto/callback.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
-import {
-  ApiStandardErrorResponses,
-  ApiWrappedCreatedResponse,
-  ApiWrappedOkResponse,
-} from 'src/common/responses/swagger.decorators';
+import { ApiStandardErrorResponses, ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('signup')
-  @ApiOperation({ summary: 'Register a new user account via Clerk' })
-  @ApiWrappedCreatedResponse({ dataDto: AuthResponseDto, description: 'User registered successfully' })
-  @ApiStandardErrorResponses({ badRequest: true, conflict: true, validation: true })
-  async signup(@Body() dto: SignupDto): Promise<AuthResponseDto> {
-    return this.authService.signup(dto);
-  }
-
-  @Post('login')
+  @Post('callback')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Login with email and password via Clerk' })
-  @ApiWrappedOkResponse({ dataDto: AuthResponseDto, description: 'Login successful' })
+  @ApiOperation({
+    summary: 'Exchange SSO auth code for an access token',
+    description:
+      'Completes the PKCE flow. The client directs the user to `accounts.drasken.dev/authorize`, ' +
+      'receives a `code` in the callback, then calls this endpoint with the code and the original ' +
+      '`codeVerifier` to obtain a signed JWT for this API.',
+  })
+  @ApiWrappedOkResponse({ dataDto: AuthResponseDto, description: 'Authenticated successfully' })
   @ApiStandardErrorResponses({ unauthorized: true, validation: true })
-  async login(@Body() dto: LoginDto): Promise<AuthResponseDto> {
-    return this.authService.login(dto);
+  async callback(@Body() dto: AuthCallbackDto): Promise<AuthResponseDto> {
+    return this.authService.handleCallback(dto);
   }
 }

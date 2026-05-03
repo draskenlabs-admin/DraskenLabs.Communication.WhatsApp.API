@@ -84,7 +84,7 @@ describe('ApiKeyAuthMiddleware', () => {
     const req: any = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'correct' } };
     mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
     mockEncryption.decrypt.mockReturnValue('correct');
-    const user = { id: 1, clerkId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const user = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
     mockRedis.getUserCache.mockResolvedValue(user);
 
     await middleware.use(req, {} as any, next);
@@ -100,7 +100,7 @@ describe('ApiKeyAuthMiddleware', () => {
     mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
     mockEncryption.decrypt.mockReturnValue('correct');
     mockRedis.getUserCache.mockResolvedValue(null);
-    const dbUser = { id: 1, clerkId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const dbUser = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
     mockUserService.findById.mockResolvedValue(dbUser);
     mockRedis.setUserCache.mockResolvedValue(undefined);
 
@@ -119,7 +119,7 @@ describe('ApiKeyAuthMiddleware', () => {
     });
     mockRedis.setApiKeyCache.mockResolvedValue(undefined);
     mockEncryption.decrypt.mockReturnValue('correct');
-    const user = { id: 1, clerkId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const user = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
     mockRedis.getUserCache.mockResolvedValue(user);
 
     await middleware.use(req, {} as any, next);

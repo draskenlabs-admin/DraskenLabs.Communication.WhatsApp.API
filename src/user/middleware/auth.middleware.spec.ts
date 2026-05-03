@@ -9,7 +9,7 @@ const mockJwt = { verifyAsync: jest.fn() };
 const mockUserService = { findById: jest.fn() };
 const mockRedis = { getUserCache: jest.fn(), setUserCache: jest.fn() };
 
-const baseUser = { id: 1, clerkId: 'cl_1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+const baseUser = { id: 1, ssoId: 'cl_1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
 
 describe('AuthMiddleware', () => {
   let middleware: AuthMiddleware;

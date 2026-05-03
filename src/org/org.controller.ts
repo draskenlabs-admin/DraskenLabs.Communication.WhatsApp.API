@@ -6,12 +6,13 @@ import {
   Delete,
   Param,
   Body,
-  Headers,
+  Req,
   UnauthorizedException,
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { Request } from 'express';
 import { OrgService } from './org.service';
 import { ApiWrappedOkResponse, ApiStandardErrorResponses } from 'src/common/responses/swagger.decorators';
 import {
@@ -30,7 +31,8 @@ import {
 export class OrgController {
   constructor(private readonly orgService: OrgService) {}
 
-  private auth(authorization: string | undefined): string {
+  private auth(req: Request): string {
+    const authorization = req.headers.authorization;
     if (!authorization) throw new UnauthorizedException('Missing Authorization header');
     return authorization;
   }
@@ -38,8 +40,8 @@ export class OrgController {
   @Get()
   @ApiOperation({ summary: 'List organisations for the authenticated SSO user' })
   @ApiWrappedOkResponse({ dataDto: OrganisationDto, isArray: true, description: 'List of organisations' })
-  listOrgs(@Headers('authorization') authorization: string) {
-    return this.orgService.listOrgs(this.auth(authorization));
+  listOrgs(@Req() req: Request) {
+    return this.orgService.listOrgs(this.auth(req));
   }
 
   @Get(':orgId')
@@ -47,40 +49,32 @@ export class OrgController {
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiWrappedOkResponse({ dataDto: OrganisationDto, description: 'Organisation details' })
   @ApiStandardErrorResponses({ notFound: true })
-  getOrg(@Param('orgId') orgId: string, @Headers('authorization') authorization: string) {
-    return this.orgService.getOrg(orgId, this.auth(authorization));
+  getOrg(@Param('orgId') orgId: string, @Req() req: Request) {
+    return this.orgService.getOrg(orgId, this.auth(req));
   }
 
   @Patch(':orgId')
   @ApiOperation({ summary: 'Update organisation name or slug (admin only)' })
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiWrappedOkResponse({ dataDto: OrganisationDto, description: 'Updated organisation' })
-  updateOrg(
-    @Param('orgId') orgId: string,
-    @Headers('authorization') authorization: string,
-    @Body() body: UpdateOrganisationDto,
-  ) {
-    return this.orgService.updateOrg(orgId, this.auth(authorization), body as Record<string, unknown>);
+  updateOrg(@Param('orgId') orgId: string, @Req() req: Request, @Body() body: UpdateOrganisationDto) {
+    return this.orgService.updateOrg(orgId, this.auth(req), body as unknown as Record<string, unknown>);
   }
 
   @Get(':orgId/members')
   @ApiOperation({ summary: 'List members of an organisation' })
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiWrappedOkResponse({ dataDto: MemberDto, isArray: true, description: 'Organisation member list' })
-  listMembers(@Param('orgId') orgId: string, @Headers('authorization') authorization: string) {
-    return this.orgService.listMembers(orgId, this.auth(authorization));
+  listMembers(@Param('orgId') orgId: string, @Req() req: Request) {
+    return this.orgService.listMembers(orgId, this.auth(req));
   }
 
   @Post(':orgId/members/invite')
   @ApiOperation({ summary: 'Invite a user to the organisation' })
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiWrappedOkResponse({ dataDto: InvitationDto, description: 'Created invitation' })
-  inviteMember(
-    @Param('orgId') orgId: string,
-    @Headers('authorization') authorization: string,
-    @Body() body: InviteMemberDto,
-  ) {
-    return this.orgService.inviteMember(orgId, this.auth(authorization), body as unknown as Record<string, unknown>);
+  inviteMember(@Param('orgId') orgId: string, @Req() req: Request, @Body() body: InviteMemberDto) {
+    return this.orgService.inviteMember(orgId, this.auth(req), body as unknown as Record<string, unknown>);
   }
 
   @Patch(':orgId/members/:userId/role')
@@ -91,10 +85,10 @@ export class OrgController {
   updateMemberRole(
     @Param('orgId') orgId: string,
     @Param('userId') userId: string,
-    @Headers('authorization') authorization: string,
+    @Req() req: Request,
     @Body() body: UpdateMemberRoleDto,
   ) {
-    return this.orgService.updateMemberRole(orgId, userId, this.auth(authorization), body as unknown as Record<string, unknown>);
+    return this.orgService.updateMemberRole(orgId, userId, this.auth(req), body as unknown as Record<string, unknown>);
   }
 
   @Delete(':orgId/members/:userId')
@@ -102,19 +96,15 @@ export class OrgController {
   @ApiOperation({ summary: 'Remove a member from the organisation (admin only)' })
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiParam({ name: 'userId', description: 'SSO user ID' })
-  removeMember(
-    @Param('orgId') orgId: string,
-    @Param('userId') userId: string,
-    @Headers('authorization') authorization: string,
-  ) {
-    return this.orgService.removeMember(orgId, userId, this.auth(authorization));
+  removeMember(@Param('orgId') orgId: string, @Param('userId') userId: string, @Req() req: Request) {
+    return this.orgService.removeMember(orgId, userId, this.auth(req));
   }
 
   @Get(':orgId/invitations')
   @ApiOperation({ summary: 'List pending invitations for an organisation' })
   @ApiParam({ name: 'orgId', description: 'SSO organisation ID' })
   @ApiWrappedOkResponse({ dataDto: InvitationDto, isArray: true, description: 'Pending invitations' })
-  listInvitations(@Param('orgId') orgId: string, @Headers('authorization') authorization: string) {
-    return this.orgService.listInvitations(orgId, this.auth(authorization));
+  listInvitations(@Param('orgId') orgId: string, @Req() req: Request) {
+    return this.orgService.listInvitations(orgId, this.auth(req));
   }
 }

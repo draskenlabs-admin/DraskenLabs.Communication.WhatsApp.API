@@ -34,27 +34,27 @@ describe('WabaService', () => {
     it('returns all WABAs for an org', async () => {
       const wabas = [{ wabaId: 'w1' }, { wabaId: 'w2' }];
       mockPrisma.waba.findMany.mockResolvedValue(wabas);
-      await expect(service.findAllByOrgId(5)).resolves.toEqual(wabas);
-      expect(mockPrisma.waba.findMany).toHaveBeenCalledWith({ where: { orgId: 5 } });
+      await expect(service.findAllByOrgId('sso_org_1')).resolves.toEqual(wabas);
+      expect(mockPrisma.waba.findMany).toHaveBeenCalledWith({ where: { ssoOrgId: 'sso_org_1' } });
     });
   });
 
   describe('findByWabaId', () => {
     it('returns WABA when found', async () => {
-      const waba = { wabaId: 'w1', orgId: 5 };
+      const waba = { wabaId: 'w1', ssoOrgId: 'sso_org_1' };
       mockPrisma.waba.findFirst.mockResolvedValue(waba);
-      await expect(service.findByWabaId(5, 'w1')).resolves.toEqual(waba);
+      await expect(service.findByWabaId('sso_org_1', 'w1')).resolves.toEqual(waba);
     });
 
     it('throws NotFoundException when not found', async () => {
       mockPrisma.waba.findFirst.mockResolvedValue(null);
       const { NotFoundException } = await import('@nestjs/common');
-      await expect(service.findByWabaId(5, 'missing')).rejects.toThrow(NotFoundException);
+      await expect(service.findByWabaId('sso_org_1', 'missing')).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('createOrUpdateWaba', () => {
-    const data = { wabaId: 'w1', userId: 1, orgId: 5, name: 'Test' };
+    const data = { wabaId: 'w1', userId: 1, ssoOrgId: 'sso_org_1', name: 'Test' };
 
     it('creates a new WABA when none exists', async () => {
       mockPrisma.waba.findUnique.mockResolvedValue(null);
@@ -79,13 +79,13 @@ describe('WabaService', () => {
   describe('disconnectWaba', () => {
     it('throws NotFoundException if WABA not in org', async () => {
       mockPrisma.waba.findFirst.mockResolvedValue(null);
-      await expect(service.disconnectWaba(1, 1, 'w1')).rejects.toThrow(NotFoundException);
+      await expect(service.disconnectWaba(1, 'sso_org_1', 'w1')).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException if user does not own the connection', async () => {
       mockPrisma.waba.findFirst.mockResolvedValue({ wabaId: 'w1' });
       mockPrisma.userWhatsapp.findUnique.mockResolvedValue(null);
-      await expect(service.disconnectWaba(1, 1, 'w1')).rejects.toThrow(ForbiddenException);
+      await expect(service.disconnectWaba(1, 'sso_org_1', 'w1')).rejects.toThrow(ForbiddenException);
     });
 
     it('invalidates phone cache for all phone numbers and deletes connection', async () => {
@@ -97,7 +97,7 @@ describe('WabaService', () => {
       ]);
       mockPrisma.userWhatsapp.delete.mockResolvedValue({});
 
-      await service.disconnectWaba(1, 1, 'w1');
+      await service.disconnectWaba(1, 'sso_org_1', 'w1');
 
       expect(mockRedis.invalidatePhoneCache).toHaveBeenCalledWith('p1');
       expect(mockRedis.invalidatePhoneCache).toHaveBeenCalledWith('p2');
@@ -112,7 +112,7 @@ describe('WabaService', () => {
       mockPrisma.wabaPhoneNumber.findMany.mockResolvedValue([]);
       mockPrisma.userWhatsapp.delete.mockResolvedValue({});
 
-      await service.disconnectWaba(1, 1, 'w1');
+      await service.disconnectWaba(1, 'sso_org_1', 'w1');
 
       expect(mockRedis.invalidatePhoneCache).not.toHaveBeenCalled();
       expect(mockPrisma.userWhatsapp.delete).toHaveBeenCalled();

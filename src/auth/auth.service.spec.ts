@@ -3,26 +3,24 @@ import { UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SsoService } from './sso.service';
 import { UserService } from 'src/user/user.service';
-import { OrgService } from 'src/org/org.service';
 import { JwtService } from '@nestjs/jwt';
-import { OrgRole } from '@prisma/client';
+import { RedisService } from 'src/redis/redis.service';
 
 const mockSsoService = {
   exchangeCode: jest.fn(),
   decodeUserInfo: jest.fn(),
+  getAuthorizeUrl: jest.fn().mockReturnValue('https://accounts.drasken.dev/authorize?foo=bar'),
 };
 
 const mockUserService = {
   findOrCreateBySsoId: jest.fn(),
-  findById: jest.fn(),
-};
-
-const mockOrgService = {
-  createOrg: jest.fn(),
-  getMemberRole: jest.fn(),
 };
 
 const mockJwtService = { signAsync: jest.fn().mockResolvedValue('signed_token') };
+
+const mockRedisService = {
+  createState: jest.fn().mockResolvedValue('state-uuid-123'),
+};
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -34,8 +32,8 @@ describe('AuthService', () => {
         AuthService,
         { provide: SsoService, useValue: mockSsoService },
         { provide: UserService, useValue: mockUserService },
-        { provide: OrgService, useValue: mockOrgService },
         { provide: JwtService, useValue: mockJwtService },
+        { provide: RedisService, useValue: mockRedisService },
       ],
     }).compile();
     service = module.get<AuthService>(AuthService);
@@ -43,63 +41,64 @@ describe('AuthService', () => {
 
   const dto = { code: 'code_123', codeVerifier: 'verifier_abc', redirectUri: 'https://app.com/callback' };
 
+  describe('getAuthorizeUrl', () => {
+    it('creates a state and returns the SSO authorize URL', async () => {
+      const result = await service.getAuthorizeUrl('https://app.com/cb', 'challenge_abc');
+
+      expect(mockRedisService.createState).toHaveBeenCalled();
+      expect(mockSsoService.getAuthorizeUrl).toHaveBeenCalledWith(
+        'https://app.com/cb', 'challenge_abc', 'state-uuid-123',
+      );
+      expect(result).toEqual({ url: 'https://accounts.drasken.dev/authorize?foo=bar', state: 'state-uuid-123' });
+    });
+  });
+
   describe('handleCallback', () => {
     it('exchanges code, provisions user and returns signed JWT', async () => {
       mockSsoService.exchangeCode.mockResolvedValue({ accessToken: 'sso_tok', refreshToken: 'ref', expiresIn: 86400 });
-      mockSsoService.decodeUserInfo.mockReturnValue({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' });
-      const user = { id: 1, status: true, activeOrgId: 5, email: 'a@b.com', firstName: 'A' };
-      mockUserService.findOrCreateBySsoId.mockResolvedValue(user);
-      mockOrgService.getMemberRole.mockResolvedValue(OrgRole.owner);
+      mockSsoService.decodeUserInfo.mockReturnValue({
+        ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B',
+        ssoOrgId: 'org_uuid_1', role: 'owner',
+      });
+      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, ssoId: 'sso_1', createdAt: new Date() });
 
       const result = await service.handleCallback(dto);
 
       expect(result.access_token).toBe('signed_token');
-      expect(result.user).toEqual(user);
       expect(mockSsoService.exchangeCode).toHaveBeenCalledWith(dto.code, dto.codeVerifier, dto.redirectUri);
+      expect(mockUserService.findOrCreateBySsoId).toHaveBeenCalledWith('sso_1');
+      expect(mockJwtService.signAsync).toHaveBeenCalledWith({
+        sub: 1, orgId: 'org_uuid_1', role: 'owner',
+      });
     });
 
-    it('throws UnauthorizedException when account is deactivated', async () => {
+    it('throws UnauthorizedException when SSO token has no org', async () => {
       mockSsoService.exchangeCode.mockResolvedValue({ accessToken: 'sso_tok' });
-      mockSsoService.decodeUserInfo.mockReturnValue({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' });
-      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, status: false, activeOrgId: 5 });
+      mockSsoService.decodeUserInfo.mockReturnValue({
+        ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B',
+        ssoOrgId: null, role: null,
+      });
 
       await expect(service.handleCallback(dto)).rejects.toThrow(UnauthorizedException);
     });
 
-    it('throws UnauthorizedException when user has no org after creation', async () => {
+    it('defaults role to "member" when SSO token has no role claim', async () => {
       mockSsoService.exchangeCode.mockResolvedValue({ accessToken: 'sso_tok' });
-      mockSsoService.decodeUserInfo.mockReturnValue({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' });
-      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, status: true, activeOrgId: null, firstName: 'A' });
-      mockOrgService.createOrg.mockResolvedValue({ orgId: 10, role: OrgRole.owner });
-      mockUserService.findById.mockResolvedValue({ id: 1, status: true, activeOrgId: null });
+      mockSsoService.decodeUserInfo.mockReturnValue({
+        ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B',
+        ssoOrgId: 'org_uuid_1', role: null,
+      });
+      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, ssoId: 'sso_1', createdAt: new Date() });
 
-      await expect(service.handleCallback(dto)).rejects.toThrow(UnauthorizedException);
-    });
+      await service.handleCallback(dto);
 
-    it('creates org when user has none and retries', async () => {
-      mockSsoService.exchangeCode.mockResolvedValue({ accessToken: 'sso_tok' });
-      mockSsoService.decodeUserInfo.mockReturnValue({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' });
-      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, status: true, activeOrgId: null, firstName: 'A' });
-      mockOrgService.createOrg.mockResolvedValue({ orgId: 10, role: OrgRole.owner });
-      mockUserService.findById.mockResolvedValue({ id: 1, status: true, activeOrgId: 10, email: 'a@b.com' });
-      mockOrgService.getMemberRole.mockResolvedValue(OrgRole.owner);
-
-      const result = await service.handleCallback(dto);
-      expect(result.access_token).toBe('signed_token');
-      expect(mockOrgService.createOrg).toHaveBeenCalled();
+      expect(mockJwtService.signAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'member' }),
+      );
     });
 
     it('throws when SSO exchange fails', async () => {
       mockSsoService.exchangeCode.mockRejectedValue(new UnauthorizedException('SSO token exchange failed'));
-      await expect(service.handleCallback(dto)).rejects.toThrow(UnauthorizedException);
-    });
-
-    it('throws when user is not in any org', async () => {
-      mockSsoService.exchangeCode.mockResolvedValue({ accessToken: 'sso_tok' });
-      mockSsoService.decodeUserInfo.mockReturnValue({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' });
-      mockUserService.findOrCreateBySsoId.mockResolvedValue({ id: 1, status: true, activeOrgId: 5, email: 'a@b.com' });
-      mockOrgService.getMemberRole.mockResolvedValue(null);
-
       await expect(service.handleCallback(dto)).rejects.toThrow(UnauthorizedException);
     });
   });

@@ -9,7 +9,7 @@ const mockJwt = { verifyAsync: jest.fn() };
 const mockUserService = { findById: jest.fn() };
 const mockRedis = { getUserCache: jest.fn(), setUserCache: jest.fn() };
 
-const baseUser = { id: 1, ssoId: 'cl_1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+const baseUser = { id: 1, ssoId: 'cl_1' };
 
 describe('AuthMiddleware', () => {
   let middleware: AuthMiddleware;
@@ -71,10 +71,4 @@ describe('AuthMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
-  it('throws UnauthorizedException if account is deactivated', async () => {
-    mockJwt.verifyAsync.mockResolvedValue({ sub: 1, orgId: 2, role: 'member' });
-    mockRedis.getUserCache.mockResolvedValue({ ...baseUser, status: false });
-
-    await expect(middleware.use(makeReq('valid.token') as any, {} as any, jest.fn())).rejects.toThrow(UnauthorizedException);
-  });
 });

@@ -24,10 +24,10 @@ describe('WabaController', () => {
 
   describe('findAll', () => {
     it('returns WABAs for the org', async () => {
-      const req = { orgId: 5 } as any;
+      const req = { orgId: 'sso_org_1' } as any;
       mockWabaService.findAllByOrgId.mockResolvedValue([{ wabaId: 'w1' }]);
       await expect(controller.findAll(req)).resolves.toEqual([{ wabaId: 'w1' }]);
-      expect(mockWabaService.findAllByOrgId).toHaveBeenCalledWith(5);
+      expect(mockWabaService.findAllByOrgId).toHaveBeenCalledWith('sso_org_1');
     });
 
     it('throws UnauthorizedException when orgId missing', async () => {
@@ -50,14 +50,14 @@ describe('WabaController', () => {
 
   describe('syncWaba', () => {
     it('syncs WABA details from Meta to DB', async () => {
-      const req = { user: { id: 1 }, orgId: 5 } as any;
+      const req = { user: { id: 1 }, orgId: 'sso_org_1' } as any;
       const metaDetails = { id: 'w1', name: 'Test', currency: 'USD', timezone_id: '1', message_template_namespace: 'ns' };
       mockWabaService.getWabaDetailsFromMeta.mockResolvedValue(metaDetails);
       mockWabaService.createOrUpdateWaba.mockResolvedValue({ wabaId: 'w1' });
 
       await expect(controller.syncWaba('w1', req)).resolves.toEqual({ wabaId: 'w1' });
       expect(mockWabaService.createOrUpdateWaba).toHaveBeenCalledWith(
-        expect.objectContaining({ wabaId: 'w1', userId: 1, orgId: 5 }),
+        expect.objectContaining({ wabaId: 'w1', userId: 1, ssoOrgId: 'sso_org_1' }),
       );
     });
 
@@ -68,10 +68,10 @@ describe('WabaController', () => {
 
   describe('disconnect', () => {
     it('disconnects a WABA', async () => {
-      const req = { user: { id: 1 }, orgId: 5 } as any;
+      const req = { user: { id: 1 }, orgId: 'sso_org_1' } as any;
       mockWabaService.disconnectWaba.mockResolvedValue(undefined);
       await expect(controller.disconnect('w1', req)).resolves.toBeUndefined();
-      expect(mockWabaService.disconnectWaba).toHaveBeenCalledWith(1, 5, 'w1');
+      expect(mockWabaService.disconnectWaba).toHaveBeenCalledWith(1, 'sso_org_1', 'w1');
     });
 
     it('throws UnauthorizedException when user or org missing', async () => {

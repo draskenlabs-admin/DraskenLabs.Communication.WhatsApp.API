@@ -107,7 +107,7 @@ describe('RedisService', () => {
     });
 
     it('returns parsed user when key exists', async () => {
-      const user = { id: 42, ssoId: 'clerk_1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+      const user = { id: 42, ssoId: 'sso_1' };
       mockClient.get.mockResolvedValue(JSON.stringify(user));
       const result = await service.getUserCache(42);
       expect(result).toEqual(user);
@@ -117,7 +117,7 @@ describe('RedisService', () => {
   describe('setUserCache', () => {
     it('sets key with 900s TTL', async () => {
       mockClient.set.mockResolvedValue('OK');
-      const user = { id: 1, ssoId: 'c', email: 'e@e.com', firstName: 'F', lastName: 'L', status: true };
+      const user = { id: 1, ssoId: 'sso_c' };
       await service.setUserCache(1, user);
       expect(mockClient.set).toHaveBeenCalledWith(
         'user:1',

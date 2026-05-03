@@ -33,19 +33,8 @@ export class AuthMiddleware implements NestMiddleware {
         const dbUser = await this.userService.findById(userId);
         if (!dbUser) throw new UnauthorizedException('User not found');
 
-        user = {
-          id: dbUser.id,
-          ssoId: dbUser.ssoId,
-          email: dbUser.email,
-          firstName: dbUser.firstName,
-          lastName: dbUser.lastName,
-          status: dbUser.status,
-        };
+        user = { id: dbUser.id, ssoId: dbUser.ssoId };
         await this.redisService.setUserCache(userId, user);
-      }
-
-      if (!user.status) {
-        throw new UnauthorizedException('Account is deactivated');
       }
 
       (req as any).user = user;

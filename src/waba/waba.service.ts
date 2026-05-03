@@ -13,12 +13,12 @@ export class WabaService {
     private readonly redisService: RedisService,
   ) {}
 
-  async findAllByOrgId(orgId: number): Promise<Waba[]> {
-    return this.prisma.waba.findMany({ where: { orgId } });
+  async findAllByOrgId(ssoOrgId: string): Promise<Waba[]> {
+    return this.prisma.waba.findMany({ where: { ssoOrgId } });
   }
 
-  async findByWabaId(orgId: number, wabaId: string): Promise<Waba> {
-    const waba = await this.prisma.waba.findFirst({ where: { orgId, wabaId } });
+  async findByWabaId(ssoOrgId: string, wabaId: string): Promise<Waba> {
+    const waba = await this.prisma.waba.findFirst({ where: { ssoOrgId, wabaId } });
     if (!waba) throw new NotFoundException('WABA not found');
     return waba;
   }
@@ -52,7 +52,7 @@ export class WabaService {
   async createOrUpdateWaba(data: {
     wabaId: string;
     userId: number;
-    orgId: number;
+    ssoOrgId: string;
     name?: string;
     currency?: string;
     timezoneId?: string;
@@ -74,7 +74,7 @@ export class WabaService {
       create: {
         wabaId: data.wabaId,
         userId: data.userId,
-        orgId: data.orgId,
+        ssoOrgId: data.ssoOrgId,
         name: data.name,
         currency: data.currency,
         timezoneId: data.timezoneId,
@@ -83,8 +83,8 @@ export class WabaService {
     });
   }
 
-  async disconnectWaba(userId: number, orgId: number, wabaId: string): Promise<void> {
-    const waba = await this.prisma.waba.findFirst({ where: { wabaId, orgId } });
+  async disconnectWaba(userId: number, ssoOrgId: string, wabaId: string): Promise<void> {
+    const waba = await this.prisma.waba.findFirst({ where: { wabaId, ssoOrgId } });
     if (!waba) throw new NotFoundException('WABA not found in your organisation');
 
     const userWhatsapp = await this.prisma.userWhatsapp.findUnique({

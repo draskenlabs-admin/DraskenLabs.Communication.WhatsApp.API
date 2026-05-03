@@ -13,7 +13,6 @@ import { WabaModule } from './waba/waba.module';
 import { WabaPhoneNumberModule } from './waba-phone-number/waba-phone-number.module';
 import { AuthModule } from './auth/auth.module';
 import { MessagingModule } from './messaging/messaging.module';
-import { OrgModule } from './org/org.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TemplatesModule } from './templates/templates.module';
 import { ContactsModule } from './contacts/contacts.module';
@@ -50,7 +49,6 @@ import * as Joi from 'joi';
     WabaPhoneNumberModule,
     AuthModule,
     MessagingModule,
-    OrgModule,
     WebhooksModule,
     TemplatesModule,
     ContactsModule,

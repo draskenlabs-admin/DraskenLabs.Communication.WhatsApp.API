@@ -15,13 +15,13 @@ export class TemplatesService {
     private readonly encryptionService: EncryptionService,
   ) {}
 
-  async syncTemplates(userId: number, orgId: number, wabaId: string): Promise<TemplateSyncResponseDto> {
+  async syncTemplates(userId: number, ssoOrgId: string, wabaId: string): Promise<TemplateSyncResponseDto> {
     const userWhatsapp = await this.prisma.userWhatsapp.findFirst({
       where: { userId, wabaId },
     });
     if (!userWhatsapp) throw new NotFoundException('No connection found for this WABA');
 
-    const waba = await this.prisma.waba.findFirst({ where: { wabaId, orgId } });
+    const waba = await this.prisma.waba.findFirst({ where: { wabaId, ssoOrgId } });
     if (!waba) throw new NotFoundException('WABA not found in your organisation');
 
     const accessToken = this.encryptionService.decrypt(userWhatsapp.accessToken);
@@ -68,8 +68,8 @@ export class TemplatesService {
     return { synced, wabaId };
   }
 
-  async findAll(orgId: number, wabaId?: string): Promise<TemplateResponseDto[]> {
-    const wabaIds = await this.resolveWabaIds(orgId, wabaId);
+  async findAll(ssoOrgId: string, wabaId?: string): Promise<TemplateResponseDto[]> {
+    const wabaIds = await this.resolveWabaIds(ssoOrgId, wabaId);
 
     const templates = await this.prisma.messageTemplate.findMany({
       where: { wabaId: { in: wabaIds } },
@@ -79,19 +79,19 @@ export class TemplatesService {
     return templates.map(this.toDto);
   }
 
-  async findOne(orgId: number, id: number): Promise<TemplateResponseDto> {
+  async findOne(ssoOrgId: string, id: number): Promise<TemplateResponseDto> {
     const template = await this.prisma.messageTemplate.findUnique({ where: { id } });
     if (!template) throw new NotFoundException('Template not found');
 
-    const waba = await this.prisma.waba.findFirst({ where: { wabaId: template.wabaId, orgId } });
+    const waba = await this.prisma.waba.findFirst({ where: { wabaId: template.wabaId, ssoOrgId } });
     if (!waba) throw new NotFoundException('Template not found');
 
     return this.toDto(template);
   }
 
-  private async resolveWabaIds(orgId: number, wabaId?: string): Promise<string[]> {
+  private async resolveWabaIds(ssoOrgId: string, wabaId?: string): Promise<string[]> {
     if (wabaId) return [wabaId];
-    const wabas = await this.prisma.waba.findMany({ where: { orgId }, select: { wabaId: true } });
+    const wabas = await this.prisma.waba.findMany({ where: { ssoOrgId }, select: { wabaId: true } });
     return wabas.map((w) => w.wabaId);
   }
 

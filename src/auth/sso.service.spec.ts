@@ -72,7 +72,7 @@ describe('SsoService', () => {
     it('extracts ssoId, email, firstName, lastName from JWT payload', () => {
       const token = makeToken({ sub: 'sso_1', email: 'a@b.com', firstName: 'Alice', lastName: 'Smith' });
       const result = service.decodeUserInfo(token);
-      expect(result).toEqual({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'Alice', lastName: 'Smith' });
+      expect(result).toMatchObject({ ssoId: 'sso_1', email: 'a@b.com', firstName: 'Alice', lastName: 'Smith' });
     });
 
     it('falls back to OIDC given_name / family_name claims', () => {

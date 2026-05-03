@@ -39,13 +39,13 @@ describe('TemplatesService', () => {
   describe('syncTemplates', () => {
     it('throws NotFoundException if no connection for WABA', async () => {
       mockPrisma.userWhatsapp.findFirst.mockResolvedValue(null);
-      await expect(service.syncTemplates(1, 1, 'w1')).rejects.toThrow(NotFoundException);
+      await expect(service.syncTemplates(1, 'sso_org_1', 'w1')).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException if WABA not in org', async () => {
       mockPrisma.userWhatsapp.findFirst.mockResolvedValue({ accessToken: 'enc' });
       mockPrisma.waba.findFirst.mockResolvedValue(null);
-      await expect(service.syncTemplates(1, 1, 'w1')).rejects.toThrow(NotFoundException);
+      await expect(service.syncTemplates(1, 'sso_org_1', 'w1')).rejects.toThrow(NotFoundException);
     });
 
     it('syncs templates from Meta and returns count', async () => {
@@ -61,7 +61,7 @@ describe('TemplatesService', () => {
       });
       mockPrisma.messageTemplate.upsert.mockResolvedValue({});
 
-      const result = await service.syncTemplates(1, 1, 'w1');
+      const result = await service.syncTemplates(1, 'sso_org_1', 'w1');
       expect(result.synced).toBe(2);
       expect(result.wabaId).toBe('w1');
       expect(mockPrisma.messageTemplate.upsert).toHaveBeenCalledTimes(2);
@@ -73,7 +73,7 @@ describe('TemplatesService', () => {
       mockPrisma.waba.findMany.mockResolvedValue([{ wabaId: 'w1' }, { wabaId: 'w2' }]);
       mockPrisma.messageTemplate.findMany.mockResolvedValue([baseTemplate]);
 
-      const result = await service.findAll(1);
+      const result = await service.findAll('sso_org_1');
       expect(mockPrisma.messageTemplate.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { wabaId: { in: ['w1', 'w2'] } } }),
       );
@@ -82,7 +82,7 @@ describe('TemplatesService', () => {
 
     it('filters by wabaId when provided', async () => {
       mockPrisma.messageTemplate.findMany.mockResolvedValue([baseTemplate]);
-      await service.findAll(1, 'w1');
+      await service.findAll('sso_org_1', 'w1');
       expect(mockPrisma.messageTemplate.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { wabaId: { in: ['w1'] } } }),
       );
@@ -92,19 +92,19 @@ describe('TemplatesService', () => {
   describe('findOne', () => {
     it('throws NotFoundException if template not found', async () => {
       mockPrisma.messageTemplate.findUnique.mockResolvedValue(null);
-      await expect(service.findOne(1, 99)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('sso_org_1', 99)).rejects.toThrow(NotFoundException);
     });
 
     it('throws NotFoundException if template WABA not in org', async () => {
       mockPrisma.messageTemplate.findUnique.mockResolvedValue(baseTemplate);
       mockPrisma.waba.findFirst.mockResolvedValue(null);
-      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
+      await expect(service.findOne('sso_org_1', 1)).rejects.toThrow(NotFoundException);
     });
 
     it('returns template when found', async () => {
       mockPrisma.messageTemplate.findUnique.mockResolvedValue(baseTemplate);
       mockPrisma.waba.findFirst.mockResolvedValue({ wabaId: 'w1' });
-      const result = await service.findOne(1, 1);
+      const result = await service.findOne('sso_org_1', 1);
       expect(result.name).toBe('hello_world');
     });
   });

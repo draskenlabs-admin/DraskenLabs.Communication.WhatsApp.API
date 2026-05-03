@@ -33,8 +33,8 @@ export class ApiKeyAuthMiddleware implements NestMiddleware {
         throw new UnauthorizedException('Invalid API key');
       }
 
-      await this.redisService.setApiKeyCache(accessKey, dbKey.userId, dbKey.orgId, dbKey.secretKey);
-      cachedKey = { userId: dbKey.userId, orgId: dbKey.orgId, secretKey: dbKey.secretKey };
+      await this.redisService.setApiKeyCache(accessKey, dbKey.userId, dbKey.ssoOrgId, dbKey.secretKey);
+      cachedKey = { userId: dbKey.userId, ssoOrgId: dbKey.ssoOrgId, secretKey: dbKey.secretKey };
     }
 
     let decryptedSecret: string;
@@ -54,23 +54,12 @@ export class ApiKeyAuthMiddleware implements NestMiddleware {
       const dbUser = await this.userService.findById(cachedKey.userId);
       if (!dbUser) throw new UnauthorizedException('User not found');
 
-      user = {
-        id: dbUser.id,
-        ssoId: dbUser.ssoId,
-        email: dbUser.email,
-        firstName: dbUser.firstName,
-        lastName: dbUser.lastName,
-        status: dbUser.status,
-      };
+      user = { id: dbUser.id, ssoId: dbUser.ssoId };
       await this.redisService.setUserCache(cachedKey.userId, user);
     }
 
-    if (!user.status) {
-      throw new UnauthorizedException('Account is deactivated');
-    }
-
     (req as any).user = user;
-    (req as any).orgId = cachedKey.orgId;
+    (req as any).orgId = cachedKey.ssoOrgId;
     (req as any).authType = 'apiKey';
     next();
   }

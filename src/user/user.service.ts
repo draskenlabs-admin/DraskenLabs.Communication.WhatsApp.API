@@ -14,19 +14,9 @@ export class UserService {
     return this.prisma.user.findUnique({ where: { ssoId } });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({ where: { email } });
-  }
-
-  async findOrCreateBySsoId(data: {
-    ssoId: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-  }): Promise<User> {
-    const existing = await this.prisma.user.findUnique({ where: { ssoId: data.ssoId } });
+  async findOrCreateBySsoId(ssoId: string): Promise<User> {
+    const existing = await this.prisma.user.findUnique({ where: { ssoId } });
     if (existing) return existing;
-
-    return this.prisma.user.create({ data });
+    return this.prisma.user.create({ data: { ssoId } });
   }
 }

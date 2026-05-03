@@ -60,47 +60,39 @@ describe('ApiKeyAuthMiddleware', () => {
 
   it('throws 401 when secret key does not match', async () => {
     const req = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'wrong' } } as any;
-    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
+    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, ssoOrgId: 'sso_org_2', secretKey: 'enc' });
     mockEncryption.decrypt.mockReturnValue('correct_secret');
     await expect(middleware.use(req, {} as any, next)).rejects.toThrow(UnauthorizedException);
   });
 
   it('throws 401 when decryption fails', async () => {
     const req = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'sk_1' } } as any;
-    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
+    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, ssoOrgId: 'sso_org_2', secretKey: 'enc' });
     mockEncryption.decrypt.mockImplementation(() => { throw new Error('bad'); });
-    await expect(middleware.use(req, {} as any, next)).rejects.toThrow(UnauthorizedException);
-  });
-
-  it('throws 401 when user is deactivated', async () => {
-    const req = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'correct' } } as any;
-    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
-    mockEncryption.decrypt.mockReturnValue('correct');
-    mockRedis.getUserCache.mockResolvedValue({ id: 1, status: false });
     await expect(middleware.use(req, {} as any, next)).rejects.toThrow(UnauthorizedException);
   });
 
   it('attaches user and orgId to request and calls next', async () => {
     const req: any = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'correct' } };
-    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
+    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, ssoOrgId: 'sso_org_2', secretKey: 'enc' });
     mockEncryption.decrypt.mockReturnValue('correct');
-    const user = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const user = { id: 1, ssoId: 'c1' };
     mockRedis.getUserCache.mockResolvedValue(user);
 
     await middleware.use(req, {} as any, next);
 
     expect(req.user).toEqual(user);
-    expect(req.orgId).toBe(2);
+    expect(req.orgId).toBe('sso_org_2');
     expect(req.authType).toBe('apiKey');
     expect(next).toHaveBeenCalled();
   });
 
   it('loads user from DB when not in Redis cache and caches it', async () => {
     const req: any = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'correct' } };
-    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, orgId: 2, secretKey: 'enc' });
+    mockRedis.getApiKeyCache.mockResolvedValue({ userId: 1, ssoOrgId: 'sso_org_2', secretKey: 'enc' });
     mockEncryption.decrypt.mockReturnValue('correct');
     mockRedis.getUserCache.mockResolvedValue(null);
-    const dbUser = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const dbUser = { id: 1, ssoId: 'c1' };
     mockUserService.findById.mockResolvedValue(dbUser);
     mockRedis.setUserCache.mockResolvedValue(undefined);
 
@@ -115,16 +107,16 @@ describe('ApiKeyAuthMiddleware', () => {
     const req: any = { headers: { 'x-access-key': 'ak_1', 'x-secret-key': 'correct' } };
     mockRedis.getApiKeyCache.mockResolvedValue(null);
     mockPrisma.userApiKey.findUnique.mockResolvedValue({
-      status: true, userId: 1, orgId: 2, secretKey: 'enc', accessKey: 'ak_1',
+      status: true, userId: 1, ssoOrgId: 'sso_org_2', secretKey: 'enc', accessKey: 'ak_1',
     });
     mockRedis.setApiKeyCache.mockResolvedValue(undefined);
     mockEncryption.decrypt.mockReturnValue('correct');
-    const user = { id: 1, ssoId: 'c1', email: 'a@b.com', firstName: 'A', lastName: 'B', status: true };
+    const user = { id: 1, ssoId: 'c1' };
     mockRedis.getUserCache.mockResolvedValue(user);
 
     await middleware.use(req, {} as any, next);
 
-    expect(mockRedis.setApiKeyCache).toHaveBeenCalledWith('ak_1', 1, 2, 'enc');
+    expect(mockRedis.setApiKeyCache).toHaveBeenCalledWith('ak_1', 1, 'sso_org_2', 'enc');
     expect(next).toHaveBeenCalled();
   });
 });

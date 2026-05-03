@@ -8,11 +8,13 @@ interface SsoTokenData {
   expiresIn: number;
 }
 
-interface SsoUserInfo {
+export interface SsoUserInfo {
   ssoId: string;
   email: string;
   firstName: string;
   lastName: string;
+  ssoOrgId: string | null;
+  role: string | null;
 }
 
 @Injectable()
@@ -73,7 +75,13 @@ export class SsoService {
         throw new Error('Missing required claims in SSO token');
       }
 
-      return { ssoId, email, firstName, lastName };
+      const ssoOrgId: string | null =
+        decoded.orgId ?? decoded.org_id ?? decoded.activeOrgId ?? decoded.active_org_id ?? null;
+
+      const role: string | null =
+        decoded.role ?? decoded.orgRole ?? decoded.org_role ?? null;
+
+      return { ssoId, email, firstName, lastName, ssoOrgId, role };
     } catch {
       throw new UnauthorizedException('Failed to decode SSO token');
     }

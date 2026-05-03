@@ -61,13 +61,13 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   // User Cache
-  async getUserCache(userId: number): Promise<{ id: number; ssoId: string; email: string; firstName: string; lastName: string; status: boolean } | null> {
+  async getUserCache(userId: number): Promise<{ id: number; ssoId: string } | null> {
     const raw = await this.client.get(`user:${userId}`);
     if (!raw) return null;
     return JSON.parse(raw);
   }
 
-  async setUserCache(userId: number, user: { id: number; ssoId: string; email: string; firstName: string; lastName: string; status: boolean }): Promise<void> {
+  async setUserCache(userId: number, user: { id: number; ssoId: string }): Promise<void> {
     await this.client.set(`user:${userId}`, JSON.stringify(user), 'EX', 900); // 15 min TTL
   }
 
@@ -100,15 +100,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.del(`phone:${phoneNumberId}`);
   }
 
-  // API Key Cache — apiKey:{accessKey} → { userId, orgId, secretKey: encrypted }
-  async setApiKeyCache(accessKey: string, userId: number, orgId: number, encryptedSecretKey: string): Promise<void> {
+  // API Key Cache — apiKey:{accessKey} → { userId, ssoOrgId, secretKey: encrypted }
+  async setApiKeyCache(accessKey: string, userId: number, ssoOrgId: string, encryptedSecretKey: string): Promise<void> {
     await this.client.set(
       `apiKey:${accessKey}`,
-      JSON.stringify({ userId, orgId, secretKey: encryptedSecretKey }),
+      JSON.stringify({ userId, ssoOrgId, secretKey: encryptedSecretKey }),
     );
   }
 
-  async getApiKeyCache(accessKey: string): Promise<{ userId: number; orgId: number; secretKey: string } | null> {
+  async getApiKeyCache(accessKey: string): Promise<{ userId: number; ssoOrgId: string; secretKey: string } | null> {
     const raw = await this.client.get(`apiKey:${accessKey}`);
     if (!raw) return null;
     return JSON.parse(raw);

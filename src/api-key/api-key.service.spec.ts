@@ -37,16 +37,16 @@ describe('ApiKeyService', () => {
     it('creates a key, encrypts secret, caches in Redis', async () => {
       mockPrisma.userApiKey.create.mockResolvedValue({});
 
-      const result = await service.createApiKey(1, 2, { name: 'Test Key' } as any);
+      const result = await service.createApiKey(1, 'sso_org_1', { name: 'Test Key' } as any);
 
       expect(result.accessKey).toMatch(/^ak_/);
       expect(result.secretKey).toMatch(/^sk_/);
       expect(mockEncryption.encrypt).toHaveBeenCalled();
       expect(mockPrisma.userApiKey.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ userId: 1, orgId: 2 }) }),
+        expect.objectContaining({ data: expect.objectContaining({ userId: 1, ssoOrgId: 'sso_org_1' }) }),
       );
       expect(mockRedis.setApiKeyCache).toHaveBeenCalledWith(
-        expect.stringMatching(/^ak_/), 1, 2, 'enc_secret',
+        expect.stringMatching(/^ak_/), 1, 'sso_org_1', 'enc_secret',
       );
     });
   });

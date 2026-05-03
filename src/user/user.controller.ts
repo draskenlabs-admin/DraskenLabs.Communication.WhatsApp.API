@@ -44,17 +44,11 @@ export class UserController {
       throw new UnauthorizedException('Test user with ID 1 not found. Please ensure it exists in the database.');
     }
 
-    const payload = { sub: user.id, email: user.email };
-    const token = await this.jwtService.signAsync(payload);
+    const token = await this.jwtService.signAsync({ sub: user.id, orgId: '', role: 'member' });
 
     return {
       access_token: token,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName
-      }
+      user: { id: user.id, ssoId: user.ssoId },
     };
   }
 }

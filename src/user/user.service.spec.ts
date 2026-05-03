@@ -51,32 +51,22 @@ describe('UserService', () => {
     });
   });
 
-  describe('findByEmail', () => {
-    it('returns user by email', async () => {
-      const user = { id: 1, email: 'a@b.com' };
-      mockPrisma.user.findUnique.mockResolvedValue(user);
-      await expect(service.findByEmail('a@b.com')).resolves.toEqual(user);
-    });
-  });
-
   describe('findOrCreateBySsoId', () => {
-    const data = { ssoId: 'sso_1', email: 'a@b.com', firstName: 'A', lastName: 'B' };
-
     it('returns existing user if found', async () => {
-      const existing = { id: 1, ...data };
+      const existing = { id: 1, ssoId: 'sso_1', createdAt: new Date() };
       mockPrisma.user.findUnique.mockResolvedValue(existing);
-      const result = await service.findOrCreateBySsoId(data);
+      const result = await service.findOrCreateBySsoId('sso_1');
       expect(result).toEqual(existing);
       expect(mockPrisma.user.create).not.toHaveBeenCalled();
     });
 
     it('creates and returns new user when not found', async () => {
-      const created = { id: 2, ...data };
+      const created = { id: 2, ssoId: 'sso_1', createdAt: new Date() };
       mockPrisma.user.findUnique.mockResolvedValue(null);
       mockPrisma.user.create.mockResolvedValue(created);
-      const result = await service.findOrCreateBySsoId(data);
+      const result = await service.findOrCreateBySsoId('sso_1');
       expect(result).toEqual(created);
-      expect(mockPrisma.user.create).toHaveBeenCalledWith({ data });
+      expect(mockPrisma.user.create).toHaveBeenCalledWith({ data: { ssoId: 'sso_1' } });
     });
   });
 });

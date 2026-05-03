@@ -25,7 +25,7 @@ export class MessagingService {
     private readonly contactsService: ContactsService,
   ) {}
 
-  async sendMessage(userId: number, orgId: number, dto: SendMessageDto): Promise<SendMessageResponseDto> {
+  async sendMessage(userId: number, ssoOrgId: string, dto: SendMessageDto): Promise<SendMessageResponseDto> {
     const phoneCache = await this.redisService.getPhoneCache(dto.phoneNumberId);
 
     if (!phoneCache) {
@@ -38,7 +38,7 @@ export class MessagingService {
       throw new ForbiddenException('Phone number does not belong to your account');
     }
 
-    const optedOut = await this.contactsService.isOptedOut(orgId, dto.to);
+    const optedOut = await this.contactsService.isOptedOut(ssoOrgId, dto.to);
     if (optedOut) throw new BadRequestException(`Recipient ${dto.to} has opted out of messages`);
 
     const plainToken = this.encryptionService.decrypt(phoneCache.accessToken);
@@ -66,7 +66,7 @@ export class MessagingService {
         payload: metaPayload as object,
         status: 'sent',
         userId,
-        orgId,
+        ssoOrgId,
       },
     });
 
@@ -81,9 +81,9 @@ export class MessagingService {
     };
   }
 
-  async findAll(orgId: number): Promise<MessageListItemDto[]> {
+  async findAll(ssoOrgId: string): Promise<MessageListItemDto[]> {
     const messages = await this.prisma.message.findMany({
-      where: { orgId },
+      where: { ssoOrgId },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -99,12 +99,12 @@ export class MessagingService {
     }));
   }
 
-  async findOne(orgId: number, messageId: number): Promise<MessageListItemDto> {
+  async findOne(ssoOrgId: string, messageId: number): Promise<MessageListItemDto> {
     const message = await this.prisma.message.findUnique({
       where: { id: messageId },
     });
 
-    if (!message || message.orgId !== orgId) {
+    if (!message || message.ssoOrgId !== ssoOrgId) {
       throw new NotFoundException('Message not found');
     }
 

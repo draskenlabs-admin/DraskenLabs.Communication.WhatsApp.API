@@ -76,7 +76,7 @@ export class WabaController {
     return this.wabaService.createOrUpdateWaba({
       wabaId: metaDetails.id,
       userId: user.id,
-      orgId,
+      ssoOrgId: orgId,
       name: metaDetails.name,
       currency: metaDetails.currency,
       timezoneId: metaDetails.timezone_id,

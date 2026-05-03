@@ -49,18 +49,18 @@ describe('MessagingService', () => {
 
     it('throws NotFoundException if phone not in cache', async () => {
       mockRedis.getPhoneCache.mockResolvedValue(null);
-      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(NotFoundException);
+      await expect(service.sendMessage(1, 'sso_org_1', dto)).rejects.toThrow(NotFoundException);
     });
 
     it('throws ForbiddenException if phone belongs to different user', async () => {
       mockRedis.getPhoneCache.mockResolvedValue({ userId: 99, wabaId: 'w1', accessToken: 'enc' });
-      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(ForbiddenException);
+      await expect(service.sendMessage(1, 'sso_org_1', dto)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws BadRequestException if recipient has opted out', async () => {
       mockRedis.getPhoneCache.mockResolvedValue({ userId: 1, wabaId: 'w1', accessToken: 'enc' });
       mockContacts.isOptedOut.mockResolvedValueOnce(true);
-      await expect(service.sendMessage(1, 1, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.sendMessage(1, 'sso_org_1', dto)).rejects.toThrow(BadRequestException);
     });
 
     it('sends text message and persists to DB', async () => {
@@ -72,10 +72,10 @@ describe('MessagingService', () => {
         type: 'text', status: 'sent', createdAt: new Date(),
       });
 
-      const result = await service.sendMessage(1, 1, dto);
+      const result = await service.sendMessage(1, 'sso_org_1', dto);
       expect(result.metaMessageId).toBe('wamid.abc');
       expect(mockPrisma.message.create).toHaveBeenCalledWith(
-        expect.objectContaining({ data: expect.objectContaining({ type: 'text', orgId: 1 }) }),
+        expect.objectContaining({ data: expect.objectContaining({ type: 'text', ssoOrgId: 'sso_org_1' }) }),
       );
     });
 
@@ -92,7 +92,7 @@ describe('MessagingService', () => {
         type: 'template', status: 'sent', createdAt: new Date(),
       });
 
-      await service.sendMessage(1, 1, templateDto);
+      await service.sendMessage(1, 'sso_org_1', templateDto);
 
       const postedPayload = (mockedAxios.post as jest.Mock).mock.calls[0][1];
       expect(postedPayload.template.name).toBe('hello_world');
@@ -105,16 +105,16 @@ describe('MessagingService', () => {
       mockPrisma.message.findMany.mockResolvedValue([
         { id: 1, metaMessageId: 'w1', phoneNumberId: 'p1', to: '111', type: 'text', status: 'sent', createdAt: new Date(), updatedAt: new Date() },
       ]);
-      const result = await service.findAll(5);
-      expect(mockPrisma.message.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { orgId: 5 } }));
+      const result = await service.findAll('sso_org_1');
+      expect(mockPrisma.message.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { ssoOrgId: 'sso_org_1' } }));
       expect(result).toHaveLength(1);
     });
   });
 
   describe('findOne', () => {
     it('throws NotFoundException if message not in org', async () => {
-      mockPrisma.message.findUnique.mockResolvedValue({ id: 1, orgId: 99 });
-      await expect(service.findOne(1, 1)).rejects.toThrow(NotFoundException);
+      mockPrisma.message.findUnique.mockResolvedValue({ id: 1, ssoOrgId: 'sso_org_99' });
+      await expect(service.findOne('sso_org_1', 1)).rejects.toThrow(NotFoundException);
     });
   });
 });

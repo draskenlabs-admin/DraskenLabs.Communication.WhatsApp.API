@@ -13,23 +13,23 @@ export class ApiKeyService {
     private readonly redisService: RedisService,
   ) {}
 
-  async createApiKey(userId: number, orgId: number, dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
+  async createApiKey(userId: number, ssoOrgId: string, dto: CreateApiKeyDto): Promise<ApiKeyResponseDto> {
     const accessKey = `ak_${crypto.randomBytes(12).toString('hex')}`;
     const secretKey = `sk_${crypto.randomBytes(24).toString('hex')}`;
     const encryptedSecretKey = this.encryptionService.encrypt(secretKey);
 
     await this.prisma.userApiKey.create({
-      data: { userId, orgId, accessKey, secretKey: encryptedSecretKey },
+      data: { userId, ssoOrgId, accessKey, secretKey: encryptedSecretKey },
     });
 
-    await this.redisService.setApiKeyCache(accessKey, userId, orgId, encryptedSecretKey);
+    await this.redisService.setApiKeyCache(accessKey, userId, ssoOrgId, encryptedSecretKey);
 
     return { accessKey, secretKey };
   }
 
-  async findAllByOrgId(orgId: number) {
+  async findAllByOrgId(ssoOrgId: string) {
     return this.prisma.userApiKey.findMany({
-      where: { orgId },
+      where: { ssoOrgId },
       select: { id: true, accessKey: true, status: true, createdAt: true },
     });
   }

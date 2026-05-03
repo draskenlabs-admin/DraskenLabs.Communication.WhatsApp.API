@@ -1,8 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl"]
@@ -12,55 +10,15 @@ datasource db {
   provider = "postgresql"
 }
 
-enum OrgRole {
-  owner
-  admin
-  member
-}
-
-model Organisation {
-  id        Int         @id @default(autoincrement())
-  name      String
-  slug      String      @unique
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-
-  members    OrgMember[]
-  Waba       Waba[]
-  UserApiKey UserApiKey[]
-  Message    Message[]
-  Contact    Contact[]
-}
-
-model OrgMember {
-  id        Int      @id @default(autoincrement())
-  orgId     Int
-  userId    Int
-  role      OrgRole  @default(member)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  org  Organisation @relation(fields: [orgId], references: [id])
-  user User         @relation(fields: [userId], references: [id])
-
-  @@unique([orgId, userId])
-}
-
 model User {
-  id          Int        @id @default(autoincrement())
-  ssoId       String     @unique
-  firstName   String
-  lastName    String
-  email       String     @unique
-  status      Boolean    @default(true)
-  activeOrgId Int?
-  createdAt   DateTime   @default(now())
+  id        Int      @id @default(autoincrement())
+  ssoId     String   @unique
+  createdAt DateTime @default(now())
 
   UserWhatsapp UserWhatsapp[]
   UserApiKey   UserApiKey[]
   Waba         Waba[]
   Message      Message[]
-  OrgMember    OrgMember[]
 }
 
 model UserWhatsapp {
@@ -86,16 +44,15 @@ model Waba {
   timezoneId               String?
   messageTemplateNamespace String?
   userId                   Int
-  orgId                    Int
+  ssoOrgId                 String
   createdAt                DateTime          @default(now())
   updatedAt                DateTime          @updatedAt
 
   user            User              @relation(fields: [userId], references: [id])
-  org             Organisation      @relation(fields: [orgId], references: [id])
-  UserWhatsapp     UserWhatsapp[]
-  WabaPhoneNumber  WabaPhoneNumber[]
-  InboundMessage   InboundMessage[]
-  MessageTemplate  MessageTemplate[]
+  UserWhatsapp    UserWhatsapp[]
+  WabaPhoneNumber WabaPhoneNumber[]
+  InboundMessage  InboundMessage[]
+  MessageTemplate MessageTemplate[]
 }
 
 model WabaPhoneNumber {
@@ -118,15 +75,14 @@ model WabaPhoneNumber {
 model UserApiKey {
   id        Int      @id @default(autoincrement())
   userId    Int
-  orgId     Int
+  ssoOrgId  String
   accessKey String   @unique
   secretKey String // Encrypted
   status    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User         @relation(fields: [userId], references: [id])
-  org  Organisation @relation(fields: [orgId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 enum MessageType {
@@ -174,12 +130,11 @@ model Message {
   payload       Json
   status        MessageStatus @default(sent)
   userId        Int
-  orgId         Int
+  ssoOrgId      String
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  user User         @relation(fields: [userId], references: [id])
-  org  Organisation @relation(fields: [orgId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 }
 
 model MessageTemplate {
@@ -202,7 +157,7 @@ model MessageTemplate {
 
 model Contact {
   id        Int      @id @default(autoincrement())
-  orgId     Int
+  ssoOrgId  String
   phone     String
   name      String?
   email     String?
@@ -211,9 +166,7 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  org Organisation @relation(fields: [orgId], references: [id])
-
-  @@unique([orgId, phone])
+  @@unique([ssoOrgId, phone])
 }
 
 model InboundMessage {

@@ -43,7 +43,7 @@ describe('ConnectService', () => {
     mockedAxios.get = jest.fn().mockResolvedValueOnce({ data: {} });
 
     await expect(
-      service.connectWhatsapp({ code: 'bad', wabaId: 'w1', businessId: 'b1' }, 1, 1),
+      service.connectWhatsapp({ code: 'bad', wabaId: 'w1', businessId: 'b1' }, 1, 'sso_org_1'),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -58,7 +58,7 @@ describe('ConnectService', () => {
       { phoneNumberId: 'p1', displayPhoneNumber: '+1555', verifiedName: 'Test', qualityRating: 'GREEN' } as any,
     ]);
 
-    const result = await service.connectWhatsapp({ code: 'code', wabaId: 'w1', businessId: 'b1' }, 1, 1);
+    const result = await service.connectWhatsapp({ code: 'code', wabaId: 'w1', businessId: 'b1' }, 1, 'sso_org_1');
     expect(result.wabaId).toBe('w1');
     expect(result.phoneNumbers).toHaveLength(1);
     expect(result.phoneNumbers[0].phoneNumberId).toBe('p1');

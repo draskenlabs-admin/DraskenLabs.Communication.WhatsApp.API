@@ -534,5 +534,5 @@ Target: raise coverage from ~8% to ≥80%.
 | 6.1 | M1 — Swagger title | ✅ |
 | 6.2 | M2 — Env var validation | ✅ |
 | 6.3 | M3 — Redis retry strategy | ✅ |
-| 6.4 | M4 — Unit test coverage | ☐ |
+| 6.4 | M4 — Unit test coverage | ✅ (80.3% lines, 220 tests) |
 | 6.5 | M5 — Rate limiting on api-keys | ✅ |

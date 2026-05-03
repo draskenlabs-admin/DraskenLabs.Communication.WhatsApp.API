@@ -16,6 +16,7 @@ import { MessagingModule } from './messaging/messaging.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { TemplatesModule } from './templates/templates.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { OrgModule } from './org/org.module';
 import * as Joi from 'joi';
 
 @Module({
@@ -52,6 +53,7 @@ import * as Joi from 'joi';
     WebhooksModule,
     TemplatesModule,
     ContactsModule,
+    OrgModule,
   ],
   controllers: [AppController],
   providers: [AppService],

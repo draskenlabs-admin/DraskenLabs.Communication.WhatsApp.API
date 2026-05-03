@@ -6,7 +6,7 @@ import { EncryptionService } from 'src/common/services/crypto.service';
 import { RedisService } from 'src/redis/redis.service';
 
 const mockPrisma = {
-  waba: { findFirst: jest.fn(), findMany: jest.fn(), upsert: jest.fn() },
+  waba: { findFirst: jest.fn(), findMany: jest.fn(), findUnique: jest.fn(), upsert: jest.fn() },
   userWhatsapp: { findFirst: jest.fn(), findUnique: jest.fn(), delete: jest.fn() },
   wabaPhoneNumber: { findMany: jest.fn() },
 };
@@ -28,6 +28,52 @@ describe('WabaService', () => {
       ],
     }).compile();
     service = module.get<WabaService>(WabaService);
+  });
+
+  describe('findAllByOrgId', () => {
+    it('returns all WABAs for an org', async () => {
+      const wabas = [{ wabaId: 'w1' }, { wabaId: 'w2' }];
+      mockPrisma.waba.findMany.mockResolvedValue(wabas);
+      await expect(service.findAllByOrgId(5)).resolves.toEqual(wabas);
+      expect(mockPrisma.waba.findMany).toHaveBeenCalledWith({ where: { orgId: 5 } });
+    });
+  });
+
+  describe('findByWabaId', () => {
+    it('returns WABA when found', async () => {
+      const waba = { wabaId: 'w1', orgId: 5 };
+      mockPrisma.waba.findFirst.mockResolvedValue(waba);
+      await expect(service.findByWabaId(5, 'w1')).resolves.toEqual(waba);
+    });
+
+    it('throws NotFoundException when not found', async () => {
+      mockPrisma.waba.findFirst.mockResolvedValue(null);
+      const { NotFoundException } = await import('@nestjs/common');
+      await expect(service.findByWabaId(5, 'missing')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('createOrUpdateWaba', () => {
+    const data = { wabaId: 'w1', userId: 1, orgId: 5, name: 'Test' };
+
+    it('creates a new WABA when none exists', async () => {
+      mockPrisma.waba.findUnique.mockResolvedValue(null);
+      mockPrisma.waba.upsert.mockResolvedValue({ ...data });
+      await expect(service.createOrUpdateWaba(data)).resolves.toEqual({ ...data });
+      expect(mockPrisma.waba.upsert).toHaveBeenCalled();
+    });
+
+    it('updates WABA when requester is the owner', async () => {
+      mockPrisma.waba.findUnique.mockResolvedValue({ wabaId: 'w1', userId: 1 });
+      mockPrisma.waba.upsert.mockResolvedValue({ ...data });
+      await expect(service.createOrUpdateWaba(data)).resolves.toBeDefined();
+    });
+
+    it('throws ForbiddenException when WABA belongs to another user', async () => {
+      mockPrisma.waba.findUnique.mockResolvedValue({ wabaId: 'w1', userId: 99 });
+      const { ForbiddenException } = await import('@nestjs/common');
+      await expect(service.createOrUpdateWaba(data)).rejects.toThrow(ForbiddenException);
+    });
   });
 
   describe('disconnectWaba', () => {

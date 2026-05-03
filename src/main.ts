@@ -55,9 +55,23 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('DraskenLabs WhatsApp Communication API')
     .setDescription(
-      'NestJS backend for DraskenLabs WhatsApp Communication API using PostgreSQL, Prisma, and Redis.',
+      'NestJS backend for DraskenLabs WhatsApp Communication API using PostgreSQL, Prisma, and Redis.\n\n' +
+      '**Authentication**\n\n' +
+      'Most endpoints use the internal JWT issued by `POST /auth/callback` in the `Authorization: Bearer <token>` header.\n\n' +
+      '**Organisation endpoints** (`/organisation/*`) are a thin proxy to the Drasken SSO API. ' +
+      'Pass the **SSO access token** (received from the SSO during login) in the `Authorization: Bearer <sso_token>` header — not the internal JWT.',
     )
-    .addBearerAuth()
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'Internal JWT issued by POST /auth/callback' }, 'jwt')
+    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT', description: 'SSO access token from Drasken SSO (used for /organisation endpoints)' }, 'sso-token')
+    .addTag('Auth', 'PKCE login flow and JWT issuance')
+    .addTag('WABAs', 'WhatsApp Business Account management')
+    .addTag('WABA Phone Numbers', 'Phone number management within a WABA')
+    .addTag('Messaging', 'Send and retrieve WhatsApp messages')
+    .addTag('Templates', 'Message template management via Meta Graph API')
+    .addTag('Contacts', 'Contact and opt-out management')
+    .addTag('API Keys', 'Programmatic access key management')
+    .addTag('Organisations', 'SSO organisation and member management — pass the SSO access token, not the internal JWT')
+    .addTag('Webhooks', 'Meta webhook verification and event ingestion')
     .setVersion('1.0.0')
     .build();
 

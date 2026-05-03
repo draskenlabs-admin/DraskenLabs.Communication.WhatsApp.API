@@ -11,7 +11,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiSecurity, ApiOperation, ApiParam, ApiHeader } from '@nestjs/swagger';
 import { Request } from 'express';
 import { OrgService } from './org.service';
 import { ApiWrappedOkResponse, ApiStandardErrorResponses } from 'src/common/responses/swagger.decorators';
@@ -25,7 +25,8 @@ import {
 } from './dto/org.dto';
 
 @ApiTags('Organisations')
-@ApiBearerAuth()
+@ApiSecurity('sso-token')
+@ApiHeader({ name: 'Authorization', description: 'SSO Bearer token — Bearer <sso_access_token>', required: true })
 @ApiStandardErrorResponses({ unauthorized: true, forbidden: true })
 @Controller('organisation')
 export class OrgController {

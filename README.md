@@ -1,98 +1,146 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# DraskenLabs WhatsApp Communication API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS REST API for sending and receiving WhatsApp messages via the Meta Cloud API. Supports multi-tenant organisations, PKCE SSO authentication, API key programmatic access, and real-time webhook event processing.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## Tech Stack
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+| Layer | Technology |
+|-------|-----------|
+| Framework | NestJS v11 (TypeScript) |
+| Database | PostgreSQL via Prisma v7 |
+| Cache | Redis via ioredis |
+| Auth | Drasken SSO (PKCE OAuth2) + API Key |
+| Encryption | AES-256-GCM (stored tokens) |
+| Docs | Swagger / OpenAPI at `/swagger/docs` |
 
-## Project setup
+---
+
+## Quick Start
 
 ```bash
-$ npm install
+# Install dependencies
+npm install
+
+# Copy and fill environment variables
+cp .env.example .env
+
+# Run database migrations
+npx prisma migrate deploy
+
+# Start in watch mode
+npm run start:dev
 ```
 
-## Compile and run the project
+---
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `PORT` | HTTP port (default 3000) |
+| `DATABASE_URL` | PostgreSQL connection string |
+| `REDIS_HOST` | Redis hostname |
+| `REDIS_PORT` | Redis port |
+| `ENCRYPTION_KEY` | 32-byte hex key for AES-256-GCM |
+| `JWT_SECRET` | Secret for signing internal JWTs |
+| `META_APP_ID` | Meta app ID |
+| `META_APP_SECRET` | Meta app secret |
+| `META_REDIRECT_URI` | OAuth redirect URI registered in Meta |
+| `WEBHOOK_VERIFY_TOKEN` | Token for Meta webhook verification |
+| `SSO_CLIENT_ID` | Drasken SSO client ID |
+| `SSO_API_URL` | Drasken SSO API base URL |
+| `SSO_ACCOUNTS_URL` | Drasken SSO accounts UI base URL |
+
+---
+
+## Authentication
+
+Two strategies are supported:
+
+### JWT (user-facing)
+
+Issued by `POST /auth/callback` after a PKCE SSO login. Pass as:
+```
+Authorization: Bearer <jwt>
+```
+
+### API Key (programmatic)
+
+Created via `POST /api-keys`. Pass both headers:
+```
+x-access-key: ak_...
+x-secret-key: sk_...
+```
+
+### SSO Token (organisation endpoints only)
+
+`/organisation/*` endpoints are a proxy to the Drasken SSO API. Pass the **SSO access token** received during login:
+```
+Authorization: Bearer <sso_access_token>
+```
+
+---
+
+## API Modules
+
+| Tag | Base Path | Auth | Description |
+|-----|-----------|------|-------------|
+| Auth | `/auth` | — | PKCE login flow, JWT issuance |
+| User | `/user` | JWT | User profile |
+| Organisations | `/organisation` | SSO Token | SSO org & member management (proxy) |
+| Connect | `/connect` | JWT | WhatsApp Embedded Signup |
+| WABAs | `/wabas` | JWT | WABA management and sync |
+| WABA Phone Numbers | `/wabas/:id/phone-numbers` | JWT | Phone number sync |
+| API Keys | `/api-keys` | JWT | Programmatic key management |
+| Messaging | `/messages` | API Key | Send and retrieve messages |
+| Templates | `/templates` | JWT | Message template sync from Meta |
+| Contacts | `/contacts` | JWT | Contact and opt-out management |
+| Webhooks | `/webhooks` | HMAC / None | Meta event ingestion |
+
+---
+
+## Swagger
+
+```
+http://localhost:3000/swagger/docs   — Swagger UI
+http://localhost:3000/swagger/json   — OpenAPI JSON
+```
+
+---
+
+## Tests
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm run test          # unit tests (115 tests, 20 suites)
+npm run test:cov      # coverage report
 ```
 
-## Run tests
+---
 
-```bash
-# unit tests
-$ npm run test
+## Project Layout
 
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
 ```
-
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+src/
+  auth/               PKCE SSO flow, JWT issuance
+  user/               User profile, auth middleware
+  org/                Organisation proxy (SSO)
+  connect/            WhatsApp Embedded Signup
+  waba/               WABA management
+  waba-phone-number/  Phone number management
+  api-key/            API key CRUD + auth middleware
+  messaging/          Send/receive messages
+  templates/          Message templates
+  contacts/           Contact management
+  webhooks/           Meta webhook handler
+  redis/              Redis service
+  prisma/             Prisma service
+  common/             Shared interceptors, filters, encryption
+prisma/
+  schema.prisma
+  migrations/
+docs/
+  development/        Architecture, phases, module docs
+  integration/        Frontend integration guide
 ```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

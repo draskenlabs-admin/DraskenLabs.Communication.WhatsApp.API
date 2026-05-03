@@ -4,10 +4,10 @@
 
 | Field | Value |
 |-------|-------|
-| Status | 🔄 In Progress |
-| Completion | 90% |
+| Status | ✅ Complete |
+| Completion | 100% |
 | Blocking Issues | None |
-| Last Updated | 2026-05-01 |
+| Last Updated | 2026-05-03 |
 
 ---
 
@@ -15,15 +15,14 @@
 
 | Wave | Name | Status | Notes |
 |------|------|--------|-------|
-| A.0 | Clerk Signup | ✅ Complete | `POST /auth/signup` — creates user in Clerk + DB, returns JWT |
-| A.0b | Clerk Login | ✅ Complete | `POST /auth/login` — verifies via Clerk FAPI, auto-provisions DB user, returns JWT |
-| A.1 | JWT Auth Middleware | ✅ Complete | `AuthMiddleware` with Redis user cache (15 min TTL, zero DB hit on cache hit) |
-| A.2 | User Profile Endpoint | ✅ Complete | `GET /user/profile` live |
-| A.3 | API Key Generation | ✅ Complete | `POST /api-keys` live |
-| A.4 | API Key Listing | ✅ Complete | `GET /api-keys` live |
-| A.5 | API Key Auth Strategy | ❌ Not Started | Guard/middleware not implemented |
-| A.6 | API Key Revocation | ❌ Not Started | `DELETE /api-keys/:id` missing |
-| A.7 | User Status Guard | ✅ Complete | `user.status` check added to `AuthMiddleware` |
+| A.0 | PKCE Authorize Endpoint | ✅ Complete | `GET /auth/authorize` — generates state in Redis, returns SSO redirect URL |
+| A.1 | SSO Callback + JWT Issuance | ✅ Complete | `POST /auth/callback` — exchanges code, decodes SSO token, issues internal JWT |
+| A.2 | JWT Auth Middleware | ✅ Complete | `AuthMiddleware` — Redis user cache (15 min TTL); falls through to DB on miss |
+| A.3 | User Profile Endpoint | ✅ Complete | `GET /user/profile` live |
+| A.4 | API Key Generation | ✅ Complete | `POST /api-keys` — `ak_` + `sk_` pair; secret encrypted; cached in Redis |
+| A.5 | API Key Auth Middleware | ✅ Complete | `ApiKeyAuthMiddleware` — Redis-first lookup, validates secret |
+| A.6 | API Key Listing | ✅ Complete | `GET /api-keys` live |
+| A.7 | API Key Revocation | ✅ Complete | `DELETE /api-keys/:id` — deactivates in DB, removes Redis cache entry |
 
 ---
 
@@ -31,13 +30,12 @@
 
 | Method | Endpoint | Auth | Status |
 |--------|----------|------|--------|
-| POST | `/auth/signup` | No | ✅ Live |
-| POST | `/auth/login` | No | ✅ Live |
-| POST | `/user/test-token` | No | ✅ Live (Dev only — needs prod gate) |
+| GET | `/auth/authorize` | None | ✅ Live |
+| POST | `/auth/callback` | None | ✅ Live |
 | GET | `/user/profile` | JWT | ✅ Live |
 | POST | `/api-keys` | JWT | ✅ Live |
 | GET | `/api-keys` | JWT | ✅ Live |
-| DELETE | `/api-keys/:id` | JWT | ❌ Not built |
+| DELETE | `/api-keys/:id` | JWT | ✅ Live |
 
 ---
 
@@ -47,7 +45,7 @@
 |----------|--------|--------|
 | First request after login | Yes (cache miss) | DB → writes to Redis |
 | Subsequent requests (within 15 min) | No | Redis cache |
-| After `invalidateUserCache()` call | Yes (cache cleared) | DB → writes to Redis |
+| After cache invalidation | Yes | DB → writes to Redis |
 
 ---
 
@@ -55,20 +53,23 @@
 
 | Component | Test File | Status |
 |-----------|-----------|--------|
-| `AuthMiddleware` | — | ❌ Missing |
+| `AuthMiddleware` | `auth.middleware.spec.ts` | ✅ 4 tests |
+| `SsoService` | `sso.service.spec.ts` | ✅ 7 tests |
 | `AuthService` | — | ❌ Missing |
-| `ClerkService` | — | ❌ Missing |
 | `UserService` | — | ❌ Missing |
-| `ApiKeyService` | — | ❌ Missing |
+| `ApiKeyService` | `api-key.service.spec.ts` | ✅ 4 tests |
 | `ApiKeyController` | — | ❌ Missing |
+| `ApiKeyAuthMiddleware` | — | ❌ Missing |
 
 ---
 
-## Issues & Risks
+## Breaking Changes from Previous Implementation
 
-| Issue | Severity | Resolution |
-|-------|----------|-----------|
-| API key auth strategy not implemented | High | Build Wave A.5 — API keys can be created but not used for auth |
-| No API key revocation | High | Build Wave A.6 |
-| Test token not gated by `NODE_ENV` | High | Add `NODE_ENV === 'production'` guard (gap F6) |
-| Zero test coverage | High | Add unit tests for middleware and services |
+| Old (Clerk) | New (Drasken SSO) |
+|-------------|-------------------|
+| `POST /auth/signup` | Removed — registration handled by SSO |
+| `POST /auth/login` | Removed — replaced by PKCE flow |
+| `ClerkService` | Removed — replaced by `SsoService` |
+| `User.email`, `User.firstName`, etc. | Removed — profile data lives in SSO |
+| `Organisation`, `OrgMember` tables | Removed — `ssoOrgId: String` used instead |
+| `user.status` check in middleware | Removed — SSO handles account state |

@@ -1,6 +1,6 @@
 # Development Status
 
-Current overall status of the DraskenLabs WhatsApp Communication API project.
+Current overall status of the DraskenLabs WhatsApp Communication API.
 
 ---
 
@@ -11,11 +11,11 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 | Project Name | DraskenLabs.Communication.WhatsApp.API |
 | Version | 0.0.1 |
 | Framework | NestJS v11 |
-| Database | PostgreSQL (via Prisma v7.8) |
+| Database | PostgreSQL (via Prisma v7) |
 | Cache | Redis (via ioredis v5) |
 | API Standard | REST + Swagger/OpenAPI |
-| Auth | JWT (Clerk-backed) + API Key |
-| Multi-tenancy | Organisation-scoped — users can belong to multiple orgs |
+| Auth | Drasken SSO (PKCE OAuth2) + API Key |
+| Multi-tenancy | `ssoOrgId: String` — org ID sourced from SSO token, no local org tables |
 
 ---
 
@@ -25,15 +25,14 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 |-------|--------|-----------|
 | Phase 1 – Foundation & Infrastructure | ✅ Complete | 100% |
 | Phase 2 – WhatsApp OAuth Connect | ✅ Complete | 100% |
-| Phase 3 – User Management | ✅ Complete | 100% |
+| Phase 3 – User Management & SSO Auth | ✅ Complete | 100% |
 | Phase 4 – WABA & Phone Numbers | ✅ Complete | 100% |
 | Phase 5 – API Key Management | ✅ Complete | 100% |
-| Phase 6 – Organisation & Multi-tenancy | ✅ Complete | 100% |
-| Phase 7 – Messaging | ✅ Complete | 100% |
-| Phase 7b – Templates | ✅ Complete | 100% |
-| Phase 7c – Contacts | ✅ Complete | 100% |
+| Phase 6 – Messaging | ✅ Complete | 100% |
+| Phase 7 – Templates & Contacts | ✅ Complete | 100% |
 | Phase 8 – Webhooks | ✅ Complete | 100% |
-| Phase 9 – Testing & Documentation | 🔄 In Progress | 40% |
+| Phase 9 – Organisation Proxy | ✅ Complete | 100% |
+| Phase 10 – Testing & Documentation | 🔄 In Progress | 60% |
 
 ---
 
@@ -41,83 +40,108 @@ Current overall status of the DraskenLabs WhatsApp Communication API project.
 
 | Module | Status | Completion | Notes |
 |--------|--------|-----------|-------|
-| [Auth](./modules/auth/) | ✅ Complete | 100% | Clerk signup/login, JWT middleware (cache-first), API key auth middleware, API key revocation all live |
-| [Organisation](./modules/org/) | ✅ Complete | 100% | Multi-org support — create, switch, list orgs; team member invite/role/remove |
-| [Account Management](./modules/account-management/) | ✅ Complete | 100% | Connect (Embedded Signup), phone cache on connect. Disconnect invalidates phone cache and removes access token. |
-| [Messaging](./modules/messaging/) | ✅ Complete | 100% | POST /messages (text/media/template), GET /messages, GET /messages/:id live. Opt-out enforced at send time. |
-| [Templates](./modules/templates/) | ✅ Complete | 100% | Sync from Meta, list, get. Status kept current by webhook handler. |
-| [Webhooks](./modules/webhooks/) | ✅ Complete | 100% | GET verification + POST HMAC-signed event processing. Inbound messages, status updates, phone quality, account events all handled. |
-| [Contacts](./modules/contacts/) | ✅ Complete | 100% | CRUD, opt-out flag, enforced at send time in MessagingService |
-| [Analytics](./modules/analytics/) | ❌ Not Started | 0% | Depends on all other modules |
+| Auth | ✅ Complete | 100% | PKCE SSO login, JWT middleware (cache-first), API key auth middleware |
+| Organisation | ✅ Complete | 100% | SSO proxy — list orgs, member invite/role/remove via SSO Bearer token |
+| Account Management (Connect) | ✅ Complete | 100% | WhatsApp Embedded Signup, phone cache on connect. Disconnect invalidates cache. |
+| WABA | ✅ Complete | 100% | Sync from Meta, list, get, disconnect |
+| WABA Phone Numbers | ✅ Complete | 100% | Sync from Meta, list by WABA |
+| API Keys | ✅ Complete | 100% | Create, list, revoke; Redis-cached for auth middleware |
+| Messaging | ✅ Complete | 100% | Send (text/media/template), list, get. Opt-out enforced at send time. |
+| Templates | ✅ Complete | 100% | Sync from Meta, list, get. Status updated by webhook handler. |
+| Contacts | ✅ Complete | 100% | CRUD, opt-out flag enforced at send time |
+| Webhooks | ✅ Complete | 100% | GET verification + POST HMAC-signed processing. Inbound, status, quality, account events. |
+| Analytics | ❌ Not Started | 0% | Depends on all other modules |
 
 ---
 
 ## Implemented API Endpoints
 
-| Method | Endpoint | Auth | Status |
-|--------|----------|------|--------|
-| GET | `/` | No | ✅ Live |
-| POST | `/auth/signup` | No | ✅ Live |
-| POST | `/auth/login` | No | ✅ Live |
-| GET | `/user/profile` | JWT | ✅ Live |
-| POST | `/user/test-token` | No | ✅ Live (Dev only) |
-| POST | `/connect` | JWT | ✅ Live (redesigned — Embedded Signup, auto phone sync) |
-| GET | `/org/mine` | JWT | ✅ Live |
-| POST | `/org` | JWT | ✅ Live |
-| POST | `/org/switch` | JWT | ✅ Live |
-| GET | `/org` | JWT | ✅ Live |
-| PATCH | `/org` | JWT | ✅ Live |
-| GET | `/org/members` | JWT | ✅ Live |
-| POST | `/org/members` | JWT | ✅ Live |
-| PATCH | `/org/members/:userId/role` | JWT | ✅ Live |
-| DELETE | `/org/members/:userId` | JWT | ✅ Live |
-| GET | `/wabas` | JWT | ✅ Live |
-| GET | `/wabas/:wabaId` | JWT | ✅ Live |
-| POST | `/wabas/:wabaId/sync` | JWT | ✅ Live |
-| GET | `/wabas/:wabaId/phone-numbers` | JWT | ✅ Live |
-| POST | `/wabas/:wabaId/phone-numbers/sync` | JWT | ✅ Live |
-| DELETE | `/wabas/:wabaId/connect` | JWT | ✅ Live |
-| POST | `/api-keys` | JWT | ✅ Live |
-| GET | `/api-keys` | JWT | ✅ Live |
-| DELETE | `/api-keys/:id` | JWT | ✅ Live |
-| POST | `/messages` | API Key | ✅ Live |
-| GET | `/messages` | API Key | ✅ Live |
-| GET | `/messages/:id` | API Key | ✅ Live |
-| POST | `/templates/sync/:wabaId` | JWT | ✅ Live |
-| GET | `/templates` | JWT | ✅ Live |
-| GET | `/templates/:id` | JWT | ✅ Live |
-| POST | `/contacts` | JWT | ✅ Live |
-| GET | `/contacts` | JWT | ✅ Live |
-| GET | `/contacts/:id` | JWT | ✅ Live |
-| PATCH | `/contacts/:id` | JWT | ✅ Live |
-| DELETE | `/contacts/:id` | JWT | ✅ Live |
-| GET | `/webhooks` | None | ✅ Live (Meta verification challenge) |
-| POST | `/webhooks` | HMAC-SHA256 | ✅ Live (inbound messages, status updates, phone quality) |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/` | None | Health check |
+| GET | `/auth/authorize` | None | Get SSO PKCE redirect URL + state |
+| POST | `/auth/callback` | None | Exchange SSO code for internal JWT |
+| GET | `/user/profile` | JWT | Get authenticated user profile |
+| GET | `/organisation` | SSO Token | List user's organisations |
+| GET | `/organisation/:orgId` | SSO Token | Get organisation details |
+| PATCH | `/organisation/:orgId` | SSO Token | Update organisation (admin) |
+| GET | `/organisation/:orgId/members` | SSO Token | List organisation members |
+| POST | `/organisation/:orgId/members/invite` | SSO Token | Invite a member |
+| PATCH | `/organisation/:orgId/members/:userId/role` | SSO Token | Update member role |
+| DELETE | `/organisation/:orgId/members/:userId` | SSO Token | Remove a member |
+| GET | `/organisation/:orgId/invitations` | SSO Token | List pending invitations |
+| POST | `/connect` | JWT | Initiate WhatsApp Embedded Signup |
+| GET | `/wabas` | JWT | List WABAs for current org |
+| GET | `/wabas/:wabaId` | JWT | Get WABA details from Meta |
+| POST | `/wabas/:wabaId/sync` | JWT | Sync WABA details from Meta to DB |
+| DELETE | `/wabas/:wabaId/connect` | JWT | Disconnect a WABA |
+| GET | `/wabas/:wabaId/phone-numbers` | JWT | List phone numbers for a WABA |
+| POST | `/wabas/:wabaId/phone-numbers/sync` | JWT | Sync phone numbers from Meta |
+| POST | `/api-keys` | JWT | Create API key pair |
+| GET | `/api-keys` | JWT | List active API keys |
+| DELETE | `/api-keys/:id` | JWT | Revoke an API key |
+| POST | `/messages` | API Key | Send a WhatsApp message |
+| GET | `/messages` | API Key | List sent messages for org |
+| GET | `/messages/:id` | API Key | Get a single message |
+| POST | `/templates/sync/:wabaId` | JWT | Sync templates from Meta |
+| GET | `/templates` | JWT | List templates for org |
+| GET | `/templates/:id` | JWT | Get a template |
+| POST | `/contacts` | JWT | Create a contact |
+| GET | `/contacts` | JWT | List contacts for org |
+| GET | `/contacts/:id` | JWT | Get a contact |
+| PATCH | `/contacts/:id` | JWT | Update a contact |
+| DELETE | `/contacts/:id` | JWT | Delete a contact |
+| GET | `/webhooks` | None | Meta webhook verification challenge |
+| POST | `/webhooks` | HMAC-SHA256 | Meta webhook event ingestion |
 
 ---
 
-## Critical Gaps (Priority Order)
-
-| Gap | Module | Priority | Impact |
-|-----|--------|----------|--------|
-| Test coverage (~8% overall) | All | 🟡 Medium | Reliability risk |
-| Analytics and reporting | Analytics | 🟢 Low | Post-launch |
-
----
-
-## Database Model Status
+## Database Models
 
 | Model | Status | Notes |
 |-------|--------|-------|
-| `Organisation` | ✅ Live | — |
-| `OrgMember` | ✅ Live | role: owner / admin / member |
-| `User` | ✅ Live | `activeOrgId` added |
-| `UserWhatsapp` | ✅ Live | — |
-| `Waba` | ✅ Live | `orgId` FK added |
-| `WabaPhoneNumber` | ✅ Live | — |
-| `UserApiKey` | ✅ Live | — |
-| `Message` | ✅ Live | Outbound message records with status tracking |
-| `MessageTemplate` | ✅ Live | Synced from Meta, status updated by webhook |
-| `WebhookEvent` | ✅ Live | Raw event log with processed/error tracking |
-| `InboundMessage` | ✅ Live | Inbound messages from customers, idempotent on metaMessageId |
-| `Contact` | ✅ Live | Org-scoped, opt-out flag enforced at send time |
+| `User` | ✅ Live | `{ id, ssoId, createdAt }` — slim; profile data lives in SSO |
+| `UserWhatsapp` | ✅ Live | Encrypted Meta access token per user+WABA |
+| `Waba` | ✅ Live | `ssoOrgId String` for multi-tenancy (no local org FK) |
+| `WabaPhoneNumber` | ✅ Live | Phone number metadata synced from Meta |
+| `UserApiKey` | ✅ Live | `ssoOrgId String`; secret AES-256-GCM encrypted |
+| `Message` | ✅ Live | Outbound messages with status tracking |
+| `MessageTemplate` | ✅ Live | Synced from Meta; status updated via webhook |
+| `Contact` | ✅ Live | `ssoOrgId + phone` unique; opt-out enforced at send time |
+| `InboundMessage` | ✅ Live | Inbound messages; idempotent on `metaMessageId` |
+| `WebhookEvent` | ✅ Live | Raw event log with processed/error flags |
+| `Organisation` | ❌ Removed | Managed entirely by Drasken SSO — no local table |
+| `OrgMember` | ❌ Removed | Managed entirely by Drasken SSO — no local table |
+
+---
+
+## Test Coverage
+
+| Suite | Tests | Status |
+|-------|-------|--------|
+| AuthMiddleware | 4 | ✅ |
+| AuthService | — | ❌ Missing |
+| SsoService | 7 | ✅ |
+| UserService | — | ❌ Missing |
+| ApiKeyService | 4 | ✅ |
+| ApiKeyController | — | ❌ Missing |
+| ApiKeyAuthMiddleware | — | ❌ Missing |
+| WabaController | 8 | ✅ |
+| WabaService | — | ❌ Missing |
+| MessagingService | 6 | ✅ |
+| MessagingController | — | ❌ Missing |
+| ContactsService | — | ❌ Missing |
+| ContactsController | — | ❌ Missing |
+| TemplatesService | — | ❌ Missing |
+| WebhooksService | — | ❌ Missing |
+| OrgService | — | ❌ Missing |
+| **Total** | **115 across 20 suites** | 🔄 In Progress |
+
+---
+
+## Critical Gaps
+
+| Gap | Module | Priority |
+|-----|--------|----------|
+| Missing service-layer tests | Auth, WABA, Messaging, Contacts, Templates | 🟡 Medium |
+| Analytics module | Analytics | 🟢 Low |

@@ -2,7 +2,12 @@
 
 ## Purpose
 
-Handles all authentication and authorization concerns for the application. Supports two authentication strategies: JWT-based session authentication for user-facing flows (backed by Clerk), and API key authentication for programmatic/integration access. Acts as the security gateway enforced across all protected endpoints.
+Handles all authentication and authorisation for the application. Implements two strategies:
+
+1. **JWT** — issued after a PKCE SSO login with Drasken SSO; used for all user-facing endpoints
+2. **API Key** — programmatic access for server-to-server integrations; uses `x-access-key` + `x-secret-key` headers
+
+Organisation endpoints (`/organisation/*`) are a separate SSO proxy pattern — the SSO access token is forwarded directly; no JWT or API Key required for those routes.
 
 ---
 
@@ -10,33 +15,60 @@ Handles all authentication and authorization concerns for the application. Suppo
 
 | Area | Included | Excluded |
 |------|----------|----------|
-| JWT validation and user loading | ✅ Yes | — |
-| Clerk-backed identity resolution | ✅ Yes | — |
+| PKCE SSO login flow | ✅ Yes | — |
+| JWT issuance and validation | ✅ Yes | — |
+| Redis user cache (auth middleware) | ✅ Yes | — |
 | API key generation (access + secret) | ✅ Yes | — |
 | API key validation on requests | ✅ Yes | — |
 | API key listing | ✅ Yes | — |
 | API key revocation | ✅ Yes | — |
-| Role-based access control (RBAC) | ❌ No | Future |
-| OAuth 2.0 server (issuing tokens) | ❌ No | Clerk handles this |
-| Multi-factor authentication | ❌ No | Handled by Clerk |
+| Role-based access control (RBAC) | ❌ No | Enforced at SSO level |
+| OAuth 2.0 server (issuing tokens) | ❌ No | Drasken SSO handles this |
+| User registration / profile management | ❌ No | Managed by Drasken SSO |
 
 ---
 
 ## Authentication Strategies
 
-| Strategy | Trigger | Token Location | Validation |
-|----------|---------|----------------|------------|
-| JWT (Clerk) | User-facing API calls | `Authorization: Bearer <jwt>` | Verified against `JWT_SECRET`, user loaded by `clerkId` |
-| API Key | Integration/programmatic calls | `x-access-key` + `x-secret-key` headers | Access key looked up in Redis cache, secret verified |
+| Strategy | Endpoints | Token Location | Validation |
+|----------|-----------|----------------|------------|
+| JWT | All protected routes except `/organisation` and messaging | `Authorization: Bearer <jwt>` | Verified against `JWT_SECRET`; payload: `{ sub, orgId, role }` |
+| API Key | `/messages` routes | `x-access-key` + `x-secret-key` headers | Access key looked up in Redis cache, secret verified |
+| SSO Token (proxy) | `/organisation/*` | `Authorization: Bearer <sso_token>` | Forwarded directly to Drasken SSO API; not validated locally |
 
 ---
 
-## Key Entities
+## JWT Payload
 
-| Entity | Description |
-|--------|-------------|
-| `User` | Platform user, identified by Clerk UID |
-| `UserApiKey` | API key pair (access + encrypted secret) owned by a user |
+```json
+{
+  "sub": 1,
+  "orgId": "sso_org_uuid",
+  "role": "admin"
+}
+```
+
+`sub` → internal `User.id`; `orgId` → SSO organisation UUID (used for multi-tenant scoping); `role` → `owner | admin | member`.
+
+---
+
+## PKCE Login Flow
+
+```
+1. Frontend calls GET /auth/authorize?redirectUri=...&codeChallenge=...
+   → API generates a state token (stored in Redis, 5 min TTL)
+   → Returns { url, state } — frontend redirects user to `url`
+
+2. User authenticates at Drasken SSO (accounts.drasken.dev)
+   → SSO redirects to redirectUri with ?code=...&state=...
+
+3. Frontend calls POST /auth/callback { code, codeVerifier, redirectUri, state }
+   → API exchanges code for SSO tokens
+   → Decodes SSO access token → extracts ssoId, ssoOrgId, role
+   → Finds or creates User by ssoId
+   → Issues internal JWT
+   → Returns { access_token, user }
+```
 
 ---
 
@@ -44,9 +76,19 @@ Handles all authentication and authorization concerns for the application. Suppo
 
 | Component | Format | Storage |
 |-----------|--------|---------|
-| Access Key | UUID v4 | DB plain, Redis indexed |
-| Secret Key | UUID v4 | DB AES-256-GCM encrypted, Redis encrypted |
+| Access Key | `ak_` + UUID v4 | DB plain text; Redis indexed |
+| Secret Key | `sk_` + UUID v4 | DB AES-256-GCM encrypted; Redis encrypted |
 | Status | Boolean (`true` = active) | DB only |
+
+---
+
+## Redis Key Schema
+
+| Key | TTL | Value |
+|-----|-----|-------|
+| `state:{uuid}` | 5 min | `{}` (presence check) |
+| `user:{id}` | 15 min | `{ id, ssoId }` |
+| `apiKey:{accessKey}` | None | `{ userId, ssoOrgId, secretKey (encrypted) }` |
 
 ---
 
@@ -54,10 +96,11 @@ Handles all authentication and authorization concerns for the application. Suppo
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/user/test-token` | No | Generate test JWT (dev only) |
+| GET | `/auth/authorize` | None | Get SSO redirect URL and state token |
+| POST | `/auth/callback` | None | Exchange SSO code for internal JWT |
 | GET | `/user/profile` | JWT | Get authenticated user profile |
 | POST | `/api-keys` | JWT | Create a new API key pair |
-| GET | `/api-keys` | JWT | List user's active API keys |
+| GET | `/api-keys` | JWT | List active API keys for the user |
 | DELETE | `/api-keys/:id` | JWT | Revoke an API key |
 
 ---
@@ -66,8 +109,9 @@ Handles all authentication and authorization concerns for the application. Suppo
 
 | Concern | Mitigation |
 |---------|-----------|
-| JWT forgery | Signed with `JWT_SECRET`, validated per request |
-| Secret key exposure | AES-256-GCM encrypted in DB; returned once on creation |
-| Brute-force key enumeration | UUID access keys (122-bit entropy) |
-| Test token in production | Must be gated by `NODE_ENV !== 'production'` |
-| Inactive user access | Auth middleware must check `user.status === true` |
+| JWT forgery | Signed with `JWT_SECRET`; validated per request |
+| PKCE code interception | `codeVerifier` only sent on callback; never stored |
+| State token replay | State stored in Redis with 5 min TTL; single-use pattern |
+| Secret key exposure | AES-256-GCM encrypted in DB; returned once on creation only |
+| API key brute-force | `ak_` + UUID v4 (122-bit entropy); Redis lookup is constant time |
+| Meta token exposure | Stored AES-256-GCM encrypted; decrypted only at request time |

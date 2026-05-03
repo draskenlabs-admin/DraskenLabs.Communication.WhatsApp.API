@@ -28,7 +28,7 @@ async function bootstrap() {
       whitelist: true,
       transform: true,
       transformOptions: { enableImplicitConversion: true },
-      forbidUnknownValues: false,
+      forbidUnknownValues: true,
       exceptionFactory: (validationErrors: any[]) => {
         const errors: FieldErrorResponse[] = [];
 
@@ -53,9 +53,9 @@ async function bootstrap() {
   app.useGlobalInterceptors(new BaseResponseInterceptor());
 
   const swaggerConfig = new DocumentBuilder()
-    .setTitle('Utility CRM API')
+    .setTitle('DraskenLabs WhatsApp Communication API')
     .setDescription(
-      'NestJS backend for Utility CRM APIs using Supabase PostgreSQL and Prisma.',
+      'NestJS backend for DraskenLabs WhatsApp Communication API using PostgreSQL, Prisma, and Redis.',
     )
     .addBearerAuth()
     .setVersion('1.0.0')

@@ -58,6 +58,11 @@ export class WabaService {
     timezoneId?: string;
     messageTemplateNamespace?: string;
   }): Promise<Waba> {
+    const existing = await this.prisma.waba.findUnique({ where: { wabaId: data.wabaId } });
+    if (existing && existing.userId !== data.userId) {
+      throw new ForbiddenException('WABA belongs to another account');
+    }
+
     return this.prisma.waba.upsert({
       where: { wabaId: data.wabaId },
       update: {

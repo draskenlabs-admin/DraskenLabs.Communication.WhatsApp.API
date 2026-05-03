@@ -136,29 +136,4 @@ describe('RedisService', () => {
     });
   });
 
-  describe('setApiKey', () => {
-    it('stores api key hash with correct key', async () => {
-      mockClient.hset.mockResolvedValue(1);
-      await service.setApiKey('acc_key', 'sec_key', 'phone_1', 'token_1');
-      expect(mockClient.hset).toHaveBeenCalledWith('access_key:acc_key', {
-        secret_key: 'sec_key',
-        phone_1: 'token_1',
-      });
-    });
-  });
-
-  describe('getApiKey', () => {
-    it('returns null when hash is empty', async () => {
-      mockClient.hgetall.mockResolvedValue({});
-      const result = await service.getApiKey('missing');
-      expect(result).toBeNull();
-    });
-
-    it('returns hash data when key exists', async () => {
-      const data = { secret_key: 'sec', phone_1: 'token' };
-      mockClient.hgetall.mockResolvedValue(data);
-      const result = await service.getApiKey('acc_key');
-      expect(result).toEqual(data);
-    });
-  });
 });

@@ -1,5 +1,6 @@
-import { Controller, Post, Get, Delete, Body, Req, Param, ParseIntPipe, HttpCode, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Body, Req, Param, ParseIntPipe, HttpCode, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { ApiKeyService } from './api-key.service';
 import { CreateApiKeyDto, ApiKeyResponseDto, ApiKeyListResponseDto } from './dto/api-key.dto';
 import { Request } from 'express';
@@ -11,6 +12,8 @@ export class ApiKeyController {
   constructor(private readonly apiKeyService: ApiKeyService) {}
 
   @Post()
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 60000, limit: 5 } })
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new API key' })
   @ApiWrappedOkResponse({

@@ -491,11 +491,11 @@ Target: raise coverage from ~8% to ≥80%.
 
 | Task | Gap | Done |
 |------|-----|------|
-| 1.1 | C1 — WABA ownership check | ☐ |
-| 1.2 | C3 — clientWABAs middleware | ☐ |
+| 1.1 | C1 — WABA ownership check | ✅ |
+| 1.2 | C3 — clientWABAs middleware | ✅ (route removed in redesign) |
 | 1.3 | F2 — user.status in AuthMiddleware | ✅ |
-| 1.4 | F6 — test-token env gate | ☐ |
-| 1.5 | M6 — forbidUnknownValues | ☐ |
+| 1.4 | F6 — test-token env gate | ✅ |
+| 1.5 | M6 — forbidUnknownValues | ✅ |
 
 ### Wave 2 — Redis Redesign
 
@@ -531,8 +531,8 @@ Target: raise coverage from ~8% to ≥80%.
 
 | Task | Gap | Done |
 |------|-----|------|
-| 6.1 | M1 — Swagger title | ☐ |
-| 6.2 | M2 — Env var validation | ☐ |
-| 6.3 | M3 — Redis retry strategy | ☐ |
+| 6.1 | M1 — Swagger title | ✅ |
+| 6.2 | M2 — Env var validation | ✅ |
+| 6.3 | M3 — Redis retry strategy | ✅ |
 | 6.4 | M4 — Unit test coverage | ☐ |
-| 6.5 | M5 — Rate limiting on api-keys | ☐ |
+| 6.5 | M5 — Rate limiting on api-keys | ✅ |

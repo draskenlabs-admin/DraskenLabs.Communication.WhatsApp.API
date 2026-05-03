@@ -21,6 +21,10 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       host: this.configService.get('REDIS_HOST'),
       port: this.configService.get('REDIS_PORT'),
       lazyConnect: true,
+      retryStrategy: (times: number) => {
+        if (times > 10) return null;
+        return Math.min(times * 100, 3000);
+      },
     });
     this.client.on('connect', () => {
       this.logger.log('Redis Connected');
@@ -114,23 +118,4 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     await this.client.del(`apiKey:${accessKey}`);
   }
 
-  // Legacy Hash-based API Key (kept for reference — superseded by setApiKeyCache)
-  async setApiKey(
-    accessKey: string,
-    secretKey: string,
-    phoneNumberId: string,
-    accessToken: string,
-  ): Promise<void> {
-    const key = `access_key:${accessKey}`;
-    await this.client.hset(key, {
-      secret_key: secretKey,
-      [phoneNumberId]: accessToken,
-    });
-  }
-
-  async getApiKey(accessKey: string): Promise<Record<string, string> | null> {
-    const key = `access_key:${accessKey}`;
-    const data = await this.client.hgetall(key);
-    return Object.keys(data).length > 0 ? data : null;
-  }
 }

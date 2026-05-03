@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
+import { Controller, ForbiddenException, Get, Post, Req, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { UserProfileDto } from './dto/user-profile.dto';
 import { ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
@@ -12,6 +13,7 @@ export class UserController {
   constructor(
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   @Get('profile')
@@ -32,7 +34,9 @@ export class UserController {
   @Post('test-token')
   @ApiOperation({ summary: 'Generate access token for user id 1 (Testing only)' })
   async generateTestToken() {
-    // For testing purposes, we use user id 1
+    if (this.configService.get('NODE_ENV') === 'production') {
+      throw new ForbiddenException('Not available in production');
+    }
     const userId = 1;
     const user = await this.userService.findById(userId);
     

@@ -1,14 +1,30 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { AuthCallbackDto } from './dto/callback.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthorizeQueryDto, AuthorizeResponseDto } from './dto/authorize.dto';
 import { ApiStandardErrorResponses, ApiWrappedOkResponse } from 'src/common/responses/swagger.decorators';
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('authorize')
+  @ApiOperation({
+    summary: 'Get SSO authorize URL',
+    description:
+      'Generates a PKCE state token and returns the full `accounts.drasken.dev/authorize` URL. ' +
+      'Redirect the user to this URL to begin the SSO login flow. ' +
+      'Pass the `codeChallenge` (SHA-256 hash of your locally generated `codeVerifier`, base64url encoded) ' +
+      'and the `redirectUri` where SSO should redirect after authentication.',
+  })
+  @ApiWrappedOkResponse({ dataDto: AuthorizeResponseDto, description: 'SSO authorize URL and state token' })
+  @ApiStandardErrorResponses({ validation: true })
+  async authorize(@Query() query: AuthorizeQueryDto): Promise<AuthorizeResponseDto> {
+    return this.authService.getAuthorizeUrl(query.redirectUri, query.codeChallenge);
+  }
 
   @Post('callback')
   @HttpCode(HttpStatus.OK)

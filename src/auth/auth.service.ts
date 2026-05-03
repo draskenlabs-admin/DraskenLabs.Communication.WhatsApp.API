@@ -3,8 +3,10 @@ import { JwtService } from '@nestjs/jwt';
 import { SsoService } from './sso.service';
 import { UserService } from 'src/user/user.service';
 import { OrgService } from 'src/org/org.service';
+import { RedisService } from 'src/redis/redis.service';
 import { AuthCallbackDto } from './dto/callback.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthorizeResponseDto } from './dto/authorize.dto';
 
 @Injectable()
 export class AuthService {
@@ -13,7 +15,14 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly orgService: OrgService,
     private readonly jwtService: JwtService,
+    private readonly redisService: RedisService,
   ) {}
+
+  async getAuthorizeUrl(redirectUri: string, codeChallenge: string): Promise<AuthorizeResponseDto> {
+    const state = await this.redisService.createState();
+    const url = this.ssoService.getAuthorizeUrl(redirectUri, codeChallenge, state);
+    return { url, state };
+  }
 
   async handleCallback(dto: AuthCallbackDto): Promise<AuthResponseDto> {
     const tokens = await this.ssoService.exchangeCode(dto.code, dto.codeVerifier, dto.redirectUri);
